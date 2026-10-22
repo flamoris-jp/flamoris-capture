@@ -15,7 +15,7 @@ if (!$HubEndpoint) {
     $candidates = @()
     $preferences = Join-Path $env:LOCALAPPDATA 'FLAMORIS'
     if (Test-Path $preferences) {
-        foreach ($file in (Get-ChildItem $preferences -Filter '*.json' -Recurse -File -ErrorAction SilentlyContinue | Where-Object Length -lt 65536)) {
+        foreach ($file in (Get-ChildItem $preferences -Filter '*mcp*.json' -Recurse -File -ErrorAction SilentlyContinue | Where-Object Length -lt 65536)) {
             try {
                 $settings = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json
                 $address = $settings.HubEndpoint
