@@ -25,18 +25,28 @@ If required, run `gh auth login`; use `gh auth setup-git` for later authenticate
 dotnet restore Flamoris.Capture.slnx
 dotnet build Flamoris.Capture.slnx -c Release --no-restore
 dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
-./scripts/publish.ps1
-./artifacts/win-x64/Flamoris.Capture.App.exe
+./product/packaging/publish-windows.ps1
+./artifacts/windows/FLAMORIS-Capture-win-x64/Flamoris.Capture.App.exe
 ```
 
-`publish.ps1` creates a self-contained app and bridge in one `artifacts/win-x64` folder. Keep the folder intact. It does not install a service, publish a GitHub release, sign binaries or change any production machine.
+`product/packaging/publish-windows.ps1` creates a self-contained app and bridge in one `artifacts/windows/FLAMORIS-Capture-win-x64` folder. Keep the folder intact. It does not install a service, publish a GitHub release, sign binaries or change any production machine.
+
+For routine use from a Git checkout, close Capture before publishing and run:
+
+```powershell
+git pull --ff-only
+./product/packaging/publish-windows.ps1
+./artifacts/windows/FLAMORIS-Capture-win-x64/Flamoris.Capture.App.exe
+```
+
+The existing `scripts/publish.ps1` remains the implementation and its legacy default output is `artifacts/win-x64`; the family entry point selects the standard package folder. Hub preferences/Windows credentials are per-user and survive either output location. Target consent and MCP sharing still start OFF after relaunch.
 
 `dotnet run --project src/Flamoris.Capture.App` is sufficient for local preview. For local MCP from that development output, put the published `Flamoris.Capture.Bridge.exe` and its dependencies beside the development app, or use the published app bundle directly. The bridge is a thin entry point to Core's implementation, not a second MCP server.
 
 Linux can cross-build with the repository's `EnableWindowsTargeting` and run the pure Core/MCP contract tests. WGC/WPF execution requires Windows. The transport test is explicitly skipped unless `FLAMORIS_CAPTURE_TEST_BRIDGE` is set; Windows CI sets it to the published bridge path and must pass that test.
 
 ```powershell
-$env:FLAMORIS_CAPTURE_TEST_BRIDGE = (Resolve-Path artifacts/win-x64/Flamoris.Capture.Bridge.exe).Path
+$env:FLAMORIS_CAPTURE_TEST_BRIDGE = (Resolve-Path artifacts/windows/FLAMORIS-Capture-win-x64/Flamoris.Capture.Bridge.exe).Path
 dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
 ```
 

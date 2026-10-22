@@ -58,6 +58,13 @@ This file separates **design readiness**, **source implementation**, **Windows h
 - Fixed sharing ON/OFF clearing the local preview. Sharing changes continue to revoke old MCP grants and cancel stale requests, while valid local capture consent keeps the still visible. Target selection clears the previous target explicitly; Stop, target loss and OS lock still clear the preview.
 - Local full-solution cross-build passed with zero warnings/errors; 24 C# tests passed and the actual Windows-bridge test was explicitly skipped on Linux. Windows CI and the real checkbox/connection acceptance of this fix are tracked separately.
 
+## 2026-10-22 — Desktop-family publish workflow
+
+- Added `product/packaging/publish-windows.ps1` so Git checkout usage matches the desktop family: pull, publish, launch the portable EXE.
+- Output is `artifacts/windows/FLAMORIS-Capture-win-x64/Flamoris.Capture.App.exe`, with the bridge, DLLs and self-contained runtime in the same folder. The original script remains the single publish implementation and keeps its legacy default output for compatibility.
+- Required app/bridge/WGC/MCP/WPF/runtime output files are checked after publish. Windows CI now executes the family entry point and tests the bridge from the resulting package folder.
+- The user reported a green Capture connection after choosing Read only. This confirms their observed indicator; real MCP image display and revoke/OS/DPI acceptance remain separate gates.
+
 ## Roadmap and gates
 
 ### 2026-10-22 — Selective video observation design

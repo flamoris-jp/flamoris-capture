@@ -24,9 +24,11 @@ Windows interactive desktop, .NET 10 SDK, D3D11/WGC-capable graphics. Windows AP
 dotnet restore Flamoris.Capture.slnx
 dotnet build Flamoris.Capture.slnx -c Release --no-restore
 dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
-./scripts/publish.ps1
-./artifacts/win-x64/Flamoris.Capture.App.exe
+./product/packaging/publish-windows.ps1
+./artifacts/windows/FLAMORIS-Capture-win-x64/Flamoris.Capture.App.exe
 ```
+
+For routine updates, close Capture, run `git pull --ff-only`, then repeat the publish and EXE commands above. The desktop-family entry point is `product/packaging/publish-windows.ps1`. The legacy `scripts/publish.ps1` entry point still defaults to `artifacts/win-x64`.
 
 The publish script places the app, reusable DLLs, Core-based bridge and self-contained .NET runtime together. Keep the entire folder; the EXE alone is not the bundle. Development can also use `dotnet run --project src/Flamoris.Capture.App`; manual/tunnel MCP needs the published bridge alongside the app. Restore uses public nuget.org, without a GitHub token.
 

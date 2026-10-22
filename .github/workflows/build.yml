@@ -24,16 +24,16 @@ jobs:
           [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path scripts/hub-registration/connect-capture.ps1), [ref]$tokens, [ref]$parseErrors)
           if ($parseErrors.Count -gt 0) { throw ($parseErrors -join "`n") }
       - name: Publish standalone app and Core-based bridge
-        run: ./scripts/publish.ps1
+        run: ./product/packaging/publish-windows.ps1
       - name: Test contracts and actual MCP bridge with synthetic pixels
         shell: pwsh
         run: |
-          $env:FLAMORIS_CAPTURE_TEST_BRIDGE = (Resolve-Path artifacts/win-x64/Flamoris.Capture.Bridge.exe).Path
+          $env:FLAMORIS_CAPTURE_TEST_BRIDGE = (Resolve-Path artifacts/windows/FLAMORIS-Capture-win-x64/Flamoris.Capture.Bridge.exe).Path
           dotnet test tests/Flamoris.Capture.Tests -c Release --no-build --logger trx --results-directory TestResults
       - uses: actions/upload-artifact@v4
         with:
           name: flamoris-capture-win-x64-preview
-          path: artifacts/win-x64/
+          path: artifacts/windows/FLAMORIS-Capture-win-x64/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
