@@ -13,6 +13,8 @@ Date, exact app commit, Windows build, SDK/runtime, GPU/driver, monitor resoluti
 | Cold start/restart | Target, capture, sharing OFF; no acquisition or endpoint | Pending |
 | Select/confirm one window | Current item name confirmed, no other-window pixels; local preview works without MCP | Pending |
 | Two windows with same title, close/recreate rapidly | Bound WGC item never changes; stale session/grant rejected | Pending |
+| Toggle sharing ON/OFF after local capture | Same approved local still stays visible; old MCP grant/session becomes unusable; local capture consent remains | Pending |
+| Connect with Edit / Read only | Edit shows the product's Read-only guidance without opening Hub transport; Read only reaches a real Hub registration | Pending |
 | Local preview → share → official MCP client | Exactly one decodable/displayed PNG/JPEG <=1 MiB; hash and geometry match | Pending |
 | Sharing revoke during capture/encoding/final disclosure | No result from old grant; local consent remains, new sessionId | Pending |
 | Target change, Stop, close, shutdown | Revoke first; no acquisition continues, no stale preview/grant | Pending |
