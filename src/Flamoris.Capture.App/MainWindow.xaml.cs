@@ -59,6 +59,7 @@ public partial class MainWindow : Window
         // Core revocation is synchronous through IMcpHost.Invalidating, even from an OS callback.
         if (!closing) _ = Dispatcher.BeginInvoke(new Action(() =>
         {
+            if (closing) return;
             Preview.Source = null;
             Share.IsChecked = session.Info.SharingAllowed;
             if (!session.Info.CaptureAllowed) TargetLabel.Text = "対象未選択";
@@ -93,6 +94,7 @@ public partial class MainWindow : Window
     }
     private void ChangeSharing(object sender, RoutedEventArgs e)
     {
+        if (closing) return;
         try { session.SetSharing(Share.IsChecked == true); }
         catch (CaptureFault fault) { Share.IsChecked = false; ShowError(fault.Code); }
         UpdateStatus();
@@ -115,10 +117,11 @@ public partial class MainWindow : Window
         finally { UpdateStatus(); }
     }
     private void StopCapture(object sender, RoutedEventArgs e) { session.Stop(); Share.IsChecked = false; Preview.Source = null; TargetLabel.Text = "対象未選択"; UpdateStatus(); }
-    private void ShowError(string code) => MessageBox.Show(this, "取得できませんでした: " + code, "FLAMORIS Capture");
+    private void ShowError(string code)
+    { if (!closing) MessageBox.Show(this, "取得できませんでした: " + code, "FLAMORIS Capture"); }
     private void UpdateStatus()
     {
-        if (mcp is null) return;
+        if (closing || mcp is null) return;
         var info = session.Info;
         CaptureButton.IsEnabled = info.CaptureAllowed && !info.Busy;
         Share.IsEnabled = info.CaptureAllowed;
