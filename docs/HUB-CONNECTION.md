@@ -42,6 +42,20 @@ Do not run an Updater change concurrently with this explicit configuration opera
 
 These deployment paths are source-reviewed and tested with mocks, not automatically executed by repository CI. Live registration is confirmed only after the human runs the helper and `hub.upstreams.list` shows Capture.
 
+## Reverse proxy route (independent of Hub registration)
+
+A registered Capture catalog/credential does **not** create a public WebSocket route. Verify the actual proxy configuration before desktop connection. In deployments that use exact Nginx locations for each product, `/desktop/capture` needs the same upstream and WebSocket upgrade headers as a working desktop route. A location for `/desktop/cutwork` alone does not cover Capture. Do not change the endpoint to another product's path.
+
+For an existing Nginx installation with exactly one simple `/desktop/cutwork` location proxying directly to `http://127.0.0.1:8769`, the optional repair is:
+
+```bash
+sudo python3 scripts/hub-registration/add_capture_route.py
+```
+
+Run this on the **proxy host** in the human's SSH terminal (including PuTTY). The helper inspects `nginx -T` locally without printing the dump, finds the actually loaded source file, copies the entire exact Cutwork location into the same server with only its path changed, saves a private backup under `/var/backups`, runs `nginx -t`, then reloads Nginx. Syntax/reload failure restores the original and reloads it. Ambiguous, nested, different-port or already configured layouts are refused for review. This is a separate explicit operation; the registration launcher does not modify Nginx. Other reverse proxies require their own verified configuration.
+
+After a successful reload, retry **MCP / AI → 接続** in Capture. Do not rerun registration or rotate its credential for a missing route. Confirm the live authenticated desktop connection separately; a configuration test alone does not prove it.
+
 ## Human desktop steps after registration
 
 1. In Capture, open **MCP / AI → 設定…**.
