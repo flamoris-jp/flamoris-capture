@@ -45,6 +45,12 @@ This file separates **design readiness**, **source implementation**, **Windows h
 - The helper's mocked tests verify environment/security preservation, conflict refusal, success, failure rollback and idempotence; CI parses the PowerShell launcher and runs these tests without production access.
 - Usage and the existing local-prefix/Hub-namespace mapping: [Hub connection](docs/HUB-CONNECTION.md).
 
+## 2026-10-22 — Hub connection troubleshooting
+
+- Human-run Hub registration reported Capture with three tools, preserved the image, and added its dedicated credential. Physical desktop MCP image acceptance is still pending.
+- The user's loaded Nginx configuration showed exact routes for three existing desktop products and no `/desktop/capture` route. Hub catalog registration alone did not publish this endpoint; the original setup instructions omitted this separate proxy step.
+- Added an explicit, separate Nginx route repair that copies the working Cutwork WebSocket block in the same server, backs up privately, checks syntax, reloads and restores on failure. Five mocked route tests (14 total host-helper tests) passed locally; production execution and Capture connection remain pending. No app rebuild or token rotation is required for this route change.
+
 ## Roadmap and gates
 
 ### 2026-10-22 — Selective video observation design
