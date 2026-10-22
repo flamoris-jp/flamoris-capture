@@ -50,9 +50,11 @@ Prefer fewer assemblies if actual implementation evidence favors simplicity. Sha
 
 ## Resource and result design
 
+The product-level baseline is [基本設計 v0.1](BASIC-DESIGN.md). Where earlier generic video-transfer wording differs, use that baseline: **metadata first, a single contact-sheet image, then selected frames**. Video export is deferred; it is not a prerequisite for AI video observation.
+
 **Still image:** bounded PNG/JPEG with actual width/height, timestamp (monotonic capture relative clock + wall timestamp where needed), target identity, ROI origin, DPI/coordinate mapping, scaling and encoding parameters. Prefer standard MCP image content via the existing `HostImageTool<T>` when supported; the current MCP Core image contract limits individual payloads to 1 MiB. Larger pictures must be safely downsized/cropped or rejected, never silently truncated.
 
-**Video:** bounded `start/status/stop/cancel` recording session, conservative max duration/FPS/dimensions/bytes to be set by benchmarks, failure and cancellation status, short-lived asset handle, chunked read/checksum or reviewed equivalent. Avoid a single huge base64 MCP JSON result. MP4/H.264 is a candidate, not an implemented codec choice. Do not infer that returning a video artifact means the client can inspect its content.
+**Video:** bounded `start/status/stop/cancel` recording session, conservative proposed limits in the basic design to validate by benchmarks, finalization, frame index and short-lived recording ID. The DLL decodes requested frames and the MCP adapter returns at most one PNG/JPEG per image query. MP4/H.264 is a candidate, not an implemented codec choice. No raw-video MCP transfer in the initial surface; future export needs a separately reviewed bounded contract.
 
 **Interaction events (later):** pointer operations, mouse wheel, explicitly approved command shortcuts, window focus/resize and opt-in application semantic events timestamped on a common monotonic clock with recorded frames. Recording events != safely replaying input. Never log freeform typed text.
 
@@ -64,7 +66,7 @@ Prefer fewer assemblies if actual implementation evidence favors simplicity. Sha
 2. Local user selects specific target and grants capture capability.
 3. Separate explicit sharing authorization allows an approved client to retrieve capture data.
 4. Every request and every outgoing result rechecks target identity, grant, current capture session, cancellation and size limits.
-5. Stop, revoke, app exit, target destruction/replacement and relevant OS session changes end active capture and invalidate outstanding handles.
+5. Normal recording **stop** ends acquisition and finalizes the recording; an already authorized recording remains readable until TTL. **Cancel/discard** removes that recording and its derivatives. **Revoke**, app exit, target destruction/replacement and relevant OS session changes invalidate outstanding workspace handles. See the basic design for separate capture/disclosure grants and local recovery.
 6. A target is **never** silently replaced by another window or expanded to a monitor.
 7. UI and MCP operate on the same captured state and lifecycle; no parallel hidden recorder.
 
@@ -77,3 +79,4 @@ Prefer fewer assemblies if actual implementation evidence favors simplicity. Sha
 - FLAMORIS Observer: infrastructure/server observation; separate responsibility.
 
 See [Privacy and security](SECURITY-PRIVACY.md) before implementing any part of this design.
+
