@@ -1,6 +1,6 @@
 # Privacy & Security / プライバシーと安全設計
 
-**Status:** proposed mandatory requirements, not implemented. Updated 2026-10-22.
+**Status:** mandatory product requirements. The one-window screenshot source implements separate consent, lifecycle invalidation and bounded results as detailed in [ADR 0001](decisions/0001-one-window-screenshot.md). Real Windows acceptance is pending. Video retention/event requirements below remain future design. Updated 2026-10-22.
 
 Screen capture is sensitive: a harmless-looking screenshot can include names, chat, notifications, passwords, documents and other applications. Video and interaction traces increase the sensitivity. FLAMORIS Capture should **fail closed** and make capture and disclosure visible to the user.
 
@@ -57,4 +57,5 @@ All derived images and event metadata inherit the parent recording's scope and m
 Before calling any MVP feature ready, demonstrate refusal after revoke, target reuse and replacement rejection, cross-user/unauthorized-client refusal, safe stop under capture load, OS-protected content behavior, and no data leaking to logs or unintended output channels.
 
 Read [Test plan](TEST-PLAN.md) for acceptance. This document is a design constraint, **not evidence that a secure implementation already exists**.
+
 

@@ -2,120 +2,70 @@
 
 **See what happened. Understand how it happened.** 🎬
 
-FLAMORIS Capture is a **planned Windows screen-observation toolkit for people and AI**. It will combine a reusable capture DLL, an independent desktop EXE, and an MCP adapter, so FLAMORIS tools and unrelated Windows applications can be observed without modifying each application.
+A Windows screen-observation toolkit for people and AI: a reusable capture DLL, an independent desktop EXE, and an MCP adapter over the same permissioned session. FLAMORIS applications and unrelated Windows applications can be observed without modifying them.
 
-**Current status: planning / documentation only (2026-10-22).** The repository was initialized from the FLAMORIS template. **There is no working capture DLL, EXE, MCP endpoint, installer, or release yet.** The interfaces, OS support, and dependencies below are design targets and require implementation and Windows validation.
+**Status: initial one-window screenshot implementation (0.1.0 development preview).** Source, automated contracts and build verification are separate from physical Windows acceptance and release. No stable release or installer is claimed. See [PROGRESS.md](PROGRESS.md).
 
-## 🧭 What it is / 何者か
+## What works in this implementation
 
-Windows用の画面キャプチャ・AI観測ツール。人間が明示的に許可した画面を静止画または短い動画として取得し、将来は許可された操作イベントと同期して「何をしたらどうなったか」を調べられるようにする。
+- A human-visible WPF EXE lists windows locally, binds one Windows Graphics Capture item, and asks for capture consent.
+- Local one-shot preview works independently of MCP; sharing is a separate opt-in. Both permissions start OFF.
+- MCP exposes only `capture.session.get` and `capture.screenshot.get`, using **Flamoris.Mcp.Core / Wpf 1.3.1** for authorization, shared connection UI, manual/Hub/tunnel connections, revocation and standard single-image results.
+- Each screenshot is PNG/JPEG, at most 1 MiB, with bounded ROI/downscale, actual dimensions, hash, source geometry/DPI and frame time metadata. No arbitrary target/path selector is exposed to MCP.
+- Stop/revoke, target loss/change, lock/disconnect, suspend and shutdown invalidate the old session and grants. No ongoing recorder or capture cache exists.
 
-It is a standalone Windows observation product and a reusable library, **not** a FLAMORIS-only screen recorder.
+**Not implemented:** rectangle/monitor capture, video recording, indexed frames/contact sheets/comparison, interaction-event trace, image saving/export UI, installer/signing. Only the selected window is eligible; the backend never falls back to the desktop. Actual minimized, protected, occluded, mixed-DPI and GPU behavior has a separate [hands-on acceptance gate](docs/WINDOWS-ACCEPTANCE.md).
 
-### What it owns / 主な責任範囲
+## Build and run
 
-- **Capture engine (DLL):** bounded screenshots, short video recordings, capture target identity, frame timestamps, cropping and encoding.
-- **Standalone Windows app (EXE):** choose a window, rectangle, or monitor; preview, record/stop, manage explicit grants, and observe status.
-- **MCP capture adapter:** expose approved observation requests and return bounded images and recording metadata, reusing [Flamoris.Mcp.Core](https://github.com/flamoris-jp/flamoris-mcp-core). Raw video export is a later, separate contract.
-- **Optional interaction trace (later phase):** application-scoped mouse actions, approved shortcuts, window-resize and application events synchronized with video; raw text/keylogging is not a goal.
+Windows interactive desktop, .NET 10 SDK, D3D11/WGC-capable graphics. Windows API floor: build 19041; win-x64 preview target. This is not a validated OS/driver support matrix.
 
-### What it does not own / 持たない責任
-
-- It does **not** edit Cutwork/2D/Kachinco documents, perform Undo/Redo, control another app, replay input, or infer application state from a screenshot with guaranteed accuracy.
-- It does **not** replace each application's domain-specific MCP queries, [FLAMORIS Observer](https://github.com/flamoris-jp/flamoris-observer) for infrastructure, or MCP Core's transport/capability authority.
-- It does **not** provide covert recording, unbounded surveillance, unrestricted desktop access, or arbitrary filesystem/network MCP tools.
-
-## Planned capture modes
-
-| Mode | Human selection | Still image | Short video |
-|---|---|---|---|
-| **Window** | Select one explicitly authorized window | Planned | Planned |
-| **Rectangle** | Drag a Snipping Tool-like screen region | Planned | Planned |
-| **Monitor** | Select an explicitly authorized display | Planned | Planned |
-
-Exact behavior for minimized/occluded windows, protected content, multiple monitors, mixed DPI, window resizing, and recording duration must be tested; availability is not assumed.
-
-**Why this exists:** while testing Cutwork, a part looked acceptable in a normal composite but hiding it exposed a hole. Real screenshots revealed what metadata and part previews alone did not. Capture is intended to provide that *visible result* while application-specific MCP provides the *internal state*.
-
-## Conceptual architecture
-
-```text
-                    People                       Authorized MCP clients
-                       |                                  |
-             FLAMORIS Capture.exe                Typed MCP capture tools
-                       |                                  |
-                       +----------- Host / grants --------+
-                                         |
-                             Capture DLL / Windows backend
-                                |                 |
-                           Still image        Short video
-                                |                 |
-                           PNG / JPEG         bounded asset
-                                         |
-                  Optional application-scoped interaction trace
+```powershell
+dotnet restore Flamoris.Capture.slnx
+dotnet build Flamoris.Capture.slnx -c Release --no-restore
+dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
+./scripts/publish.ps1
+./artifacts/win-x64/Flamoris.Capture.App.exe
 ```
 
-One recording session and its permissions are controlled by the Capture host. The DLL does not create a second application editing authority. MCP is a bounded interface to the same capture session.
+The publish script places the app, reusable DLLs, Core-based bridge and self-contained .NET runtime together. Keep the entire folder; the EXE alone is not the bundle. Development can also use `dotnet run --project src/Flamoris.Capture.App`; manual/tunnel MCP needs the published bridge alongside the app. Restore uses public nuget.org, without a GitHub token.
 
-See [Architecture](docs/ARCHITECTURE.md), [Privacy & security](docs/SECURITY-PRIVACY.md), and [Test plan](docs/TEST-PLAN.md).
+See [Setup](docs/SETUP.md) for the DLL contract, connection instructions and request examples, and [ADR 0001](docs/decisions/0001-one-window-screenshot.md) for implementation limits and decisions.
 
-## AI video observation / 必要なコマだけ観測
+## Usage
 
-**Proposed basic design, not implemented:** keep recordings in Capture and let AI request only the images it needs. The default flow is **metadata summary → contact sheet → selected frame / ROI → optional comparison and event correlation**. Do not automatically attach a whole video or every frame.
+1. Refresh the local window list and choose one window.
+2. Click **このウィンドウの撮影を許可**, review the current target name, and confirm.
+3. Click **静止画を取得** for local preview. This does not share pixels.
+4. To share, check **この対象の画像をMCPで共有する**, then use **MCP / AI → 接続** and choose **Read only**. Connection settings are provided by the shared desktop MCP subsystem.
+5. The MCP client obtains `documentToken` from `mcp.context` and uses it as `sessionId`. Each screenshot request acquires one fresh frame and ends acquisition.
+6. Uncheck sharing to revoke MCP while retaining local capture consent, or click **すべて停止・許可解除** to clear everything. Switching targets requires new consent and sharing authorization.
 
-指定時刻と0始まりのコマ番号の両方を扱い、要求時刻と実取得時刻、欠落、サイズ変更を明示する。人間は動画を再生し、AIは必要なコマだけを確認する。
+The window contains whatever the target application displays; browser tabs, names and documents can be sensitive. Titles remain local UI only. No free text, keystrokes, clipboard, input injection or all-system hooks are recorded.
 
-Read [基本設計 v0.1](docs/BASIC-DESIGN.md) for the proposed MCP contracts, time/index rules, single-image result budget, recording/asset lifecycle, and acceptance criteria. No tool listed there is callable yet.
+## Assemblies and ownership
 
-## Getting started
-
-**There is not yet a runnable binary.** For developers and reviewers, start with [Setup & development](docs/SETUP.md). It explains prerequisites, how to obtain the repository, what is not available yet, and the proposed first implementation slice.
-
-When code is introduced, its actual solution/project paths and verified `dotnet restore/build/test` commands will be added to Setup. Do not treat illustrative architecture names as existing projects.
-
-## Roadmap / 開発順序
-
-1. **Foundation:** define stable capture session/target/grant boundaries, one DLL, a minimal EXE, and one approved Windows screenshot via MCP.
-2. **Target modes:** window, rectangle, monitor; DPI/multi-display normalization and preview.
-3. **Video observation:** bounded start/status/stop/cancel, MP4 candidate, summary, indexed frame retrieval, contact sheets and comparison; timeout and cleanup. Raw video transfer is deferred to a separate bounded export design.
-4. **Interaction trace:** opt-in application-scoped operations with synchronized timestamps; redact text and sensitive inputs.
-5. **Productization:** packaging, CI, real Windows hands-on acceptance, diagnostics, and HowTo/test-report consumers.
-
-These are **plans**, not shipped features. [PROGRESS.md](PROGRESS.md) tracks source work versus validation and release readiness.
-
-## Working with FLAMORIS
-
-| Integration | Boundary |
+| Component | Responsibility |
 |---|---|
-| [Cutwork](https://github.com/flamoris-jp/flamoris-cutwork) | Observe real UI and compare with Part/Mask/Repair MCP data. |
-| [FLAMORIS 2D](https://github.com/flamoris-jp/flamoris-2D) | Observe animated previews while 2D owns rig/motion state. |
-| [Kachinco](https://github.com/flamoris-jp/flamoris-kachinco) | Observe GUI/how-to interactions while Kachinco owns the timeline. |
-| [MCP Core](https://github.com/flamoris-jp/flamoris-mcp-core) | Reuse authorization, revocation, bounded MCP image results and protocol infrastructure. |
-| [MCP Hub](https://github.com/flamoris-jp/flamoris-mcp-hub) | Optional external orchestration; Capture must also work without the Hub. |
+| `Flamoris.Capture.Core` | Authoritative session, consent/epoch, busy/cancel and pure image policies; no UI/MCP dependency |
+| `Flamoris.Capture.Windows` | Reusable WGC/D3D11 capture DLL, target identity, bounded image encoding |
+| `Flamoris.Capture.App` | Standalone EXE, human target/permission controls, local preview and OS lifecycle |
+| `Flamoris.Capture.Mcp` | Two typed query adapters over the same session; no second target authority |
+| `Flamoris.Capture.Bridge` | Executable entry point to packaged MCP Core's stdio bridge |
+| MCP Core / Wpf | Transport, same-user capability, RequestGuard, disclosure checks, connection UI/providers |
 
-FLAMORIS overview: [organization map](https://github.com/flamoris-jp/.github) · [Desktop ecosystem](https://github.com/flamoris-jp/flamoris-commons/blob/main/docs/desktop-ecosystem.md).
+Capture observes visible results; Cutwork/2D/Kachinco retain their own documents, edits and internal-state MCP. Infrastructure [Observer](https://github.com/flamoris-jp/flamoris-observer) is a different responsibility. Hub is an optional connection provider, not a mandatory capture server.
 
-## Safety by design
+## Later: selective video observation
 
-Capture starts **off**. The user must select the target and separately authorize any MCP disclosure; a recording indicator and immediate stop/revoke must be available. Rectangle/monitor capture is broader than single-window capture and needs distinct authorization. No covert recording, secure-desktop bypass, password/keylogging, or automatic handoff of unrelated windows. Recorded data is sensitive and must have strict size, TTL and deletion controls.
+The [basic design](docs/BASIC-DESIGN.md) remains the roadmap for **summary → contact sheet → selected frame / ROI → optional comparison/events**. Human playback and AI observation will use the same bounded recording asset; default AI observation will not upload the entire video. These video tools are not registered in this implementation.
 
-See [Privacy & security](docs/SECURITY-PRIVACY.md). AI-accessible capture is **read access to screen pixels**, not merely harmless metadata.
+## Development
 
-## Development / contributions
+Read [AGENTS.md](AGENTS.md), [Setup](docs/SETUP.md), [Architecture](docs/ARCHITECTURE.md), [Privacy](docs/SECURITY-PRIVACY.md) and [Test plan](docs/TEST-PLAN.md). CI builds/publishes Windows and runs an official MCP-client round trip using synthetic pixels. It does not certify real-display capture. Do not commit real user captures, tokens or machine-specific settings.
 
-Read [AGENTS.md](AGENTS.md), [docs/SETUP.md](docs/SETUP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and [PROGRESS.md](PROGRESS.md). Prefer small reviewed PRs with deterministic tests and Windows real-display evidence. **Do not add machine-specific paths, credentials, raw captured screens or test recordings to source control.**
-
-Concept/design request: [FLAMORIS Issue Inbox #9](https://github.com/flamoris-net/flamoris-issue/issues/9) (the Inbox is private; link may require access). Implementation-specific Issues belong here after scope approval.
-
-## GitHub metadata
-
-Suggested topics: `flamoris`, `screen-capture`, `windows`, `mcp`, `desktop`, `dotnet`, `observability`. Set the organization `development_status` to **planned** while no runnable product exists. This README does not change repository metadata automatically.
+FLAMORIS: [organization map](https://github.com/flamoris-jp/.github) · [Desktop ecosystem](https://github.com/flamoris-jp/flamoris-commons/blob/main/docs/desktop-ecosystem.md) · [MCP Core](https://github.com/flamoris-jp/flamoris-mcp-core).
 
 ## License and support
 
-Source code is licensed under [Apache License 2.0](LICENSE), unless noted otherwise. External codecs, Windows APIs, dependencies and media have their own licensing constraints and require review before distribution.
-
-FLAMORIS software is provided as-is, with no guaranteed support. You can use, adapt and distribute Apache-2.0-licensed code, including commercially, under its terms. AI-assisted self-support through repository documentation, Issues, code, and tests is welcome.
-
-> **FLAMORIS Capture is a planned product; capabilities listed above are design intentions until a release and test evidence say otherwise.**
-
+Source is [Apache-2.0](LICENSE). Windows SDK/platform APIs and NuGet dependencies retain their own terms; no model, media or third-party capture backend is vendored. See ADR 0001 for dependencies. FLAMORIS is provided as-is, without guaranteed individual support.

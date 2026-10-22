@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="src/Flamoris.Capture.Core/Flamoris.Capture.Core.csproj" />
+  <Project Path="src/Flamoris.Capture.Windows/Flamoris.Capture.Windows.csproj" />
+  <Project Path="src/Flamoris.Capture.Mcp/Flamoris.Capture.Mcp.csproj" />
+  <Project Path="src/Flamoris.Capture.App/Flamoris.Capture.App.csproj" />
+  <Project Path="src/Flamoris.Capture.Bridge/Flamoris.Capture.Bridge.csproj" />
+  <Project Path="tests/Flamoris.Capture.Tests/Flamoris.Capture.Tests.csproj" />
+</Solution>

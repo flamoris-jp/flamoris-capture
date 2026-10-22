@@ -1,7 +1,7 @@
 # FLAMORIS Capture Progress
 
 **Updated:** 2026-10-22  
-**Project status:** `planned` (documentation/bootstrap, no runnable product)  
+**Project status:** initial one-window screenshot source implemented; Windows hands-on/release pending
 **Repository:** [flamoris-jp/flamoris-capture](https://github.com/flamoris-jp/flamoris-capture)
 
 This file separates **design readiness**, **source implementation**, **Windows hands-on acceptance**, and **release readiness**. A completed design checklist must never be reported as a tested feature.
@@ -11,14 +11,14 @@ This file separates **design readiness**, **source implementation**, **Windows h
 | Deliverable | Source | Automated verification | Windows hands-on | Release |
 |---|---|---|---|---|
 | Product scope, README and initial documentation | ✅ documented | Documentation review only | Not applicable | Not applicable |
-| Screenshot capture DLL | Not started | Not started | Not started | Not available |
-| Standalone EXE and target selection | Not started | Not started | Not started | Not available |
-| MCP grants and image results | Not started | Not started | Not started | Not available |
-| Window / rectangle / monitor coverage | Not started | Not started | Not started | Not available |
+| Screenshot capture DLL | Implemented: WGC, bounded PNG/JPEG/ROI | Full Windows-target cross-build passed; image-policy tests passed | Pending | Not released |
+| Standalone EXE and target selection | Implemented: local selection, consent, preview, Stop | WPF cross-build passed | Pending | Not released |
+| MCP grants and image results | Implemented: two typed queries, shared Core/Wpf 1.3.1 | Adapter/contracts passed; actual bridge Windows CI pending | Pending | Not released |
+| Window / rectangle / monitor coverage | Window source only; rectangle/monitor not implemented | Source checks only | Pending | Not released |
 | Short video, indexed observation, cleanup | Not started | Not started | Not started | Not available |
 | Metadata-first video observation, frame selection, contact sheets | Basic design v0.1 documented; code not started | Documentation consistency review only | Not started | Not available |
 | Interaction-event trace and synchronization | Not started | Not started | Not started | Not available |
-| Windows packaging and published binaries | Not started | Not started | Not started | Not available |
+| Windows packaging and published binaries | Self-contained win-x64 publish script and CI | CI pending | Pending | No release/installer |
 
 ## 2026-10-22 — Repository initialization
 
@@ -27,6 +27,15 @@ This file separates **design readiness**, **source implementation**, **Windows h
 - Cross-repository reference: [private FLAMORIS Idea Inbox #9](https://github.com/flamoris-net/flamoris-issue/issues/9).
 - Driving hands-on observation: Cutwork Part separation looked correct in normal composite but hiding the part exposed holes; screen-level verification complements domain-level MCP.
 - **No capture code, recorder, Windows executable, tests, CI pipeline, package or real hardware verification has been implemented as part of this documentation task.**
+
+## 2026-10-22 — First screenshot implementation
+
+- Implemented `Flamoris.Capture.Core`, reusable `Flamoris.Capture.Windows.dll`, WPF `Flamoris.Capture.App.exe`, same-session `Flamoris.Capture.Mcp`, and a thin executable entry point to packaged Core's stdio bridge.
+- API floor Windows build 19041 / .NET 10; D3D11 hardware + WGC immutable selected-window item, no broader fallback. Consent/share start OFF. Invalidation on target/share/Stop/OS lifecycle, closed DTOs, source/ROI/image bounds, QPC/DPI/geometry/hash metadata and one admission slot are implemented.
+- Fixed public NuGet Core/Wpf **1.3.1**; reused the shared connection menu/providers, capabilities, RequestGuard and single-image transport. No package code or DLLs vendored.
+- Local evidence: .NET SDK **10.0.402 on Linux**, full solution restore/cross-build (including WPF + WGC), **0 warnings / 0 errors**; **23 contract/policy/adapter test cases passed**, **1 actual-bridge integration explicitly skipped** because a published Windows bridge is not executable here.
+- Windows CI is configured to build/publish the win-x64 preview and run the official MCP client against the actual bridge with synthetic pixels. Its result is recorded separately once available. No physical WGC test, real client image rendering, DPI/OS/driver acceptance or release is inferred from contract tests.
+- See [ADR 0001](docs/decisions/0001-one-window-screenshot.md), [Setup](docs/SETUP.md), and the unexecuted [Windows acceptance checklist](docs/WINDOWS-ACCEPTANCE.md).
 
 ## Roadmap and gates
 
@@ -41,17 +50,17 @@ This file separates **design readiness**, **source implementation**, **Windows h
 ### P0 · Define the first screenshot contract
 
 - [ ] Decide supported Windows versions and whether Windows Graphics Capture meets actual constraints, including headless/minimized/locked scenarios.
-- [ ] Define capture session owner, one target ID, per-target consent, separate MCP disclosure grant and revoke behavior.
-- [ ] Confirm packaging boundaries: reusable DLL, GUI EXE, and MCP adapter with no second transport/security implementation.
-- [ ] Choose an MVP rendering backend; record unsupported cases rather than silently falling back to another screen.
-- [ ] Define still-image max bytes, ROI/downscale, timestamp/DPI metadata, cancellation and error vocabulary.
-- [ ] Accept an ADR for security, sharing and resource budgets.
+- [x] Define capture session owner, one target ID, per-target consent, separate MCP disclosure grant and revoke behavior.
+- [x] Confirm packaging boundaries: reusable DLL, GUI EXE, and MCP adapter with no second transport/security implementation.
+- [x] Choose an MVP rendering backend; record unsupported cases rather than silently falling back to another screen.
+- [x] Define still-image max bytes, ROI/downscale, timestamp/DPI metadata, cancellation and error vocabulary.
+- [x] Accept an ADR for security, sharing and resource budgets.
 
 ### P1 · Implement and verify one-window still-image path
 
-- [ ] Author code + deterministic tests for target identity, sizing, ROI, bounds and session lifetime.
-- [ ] Create a minimal human-visible EXE with target selection, capture indicator and stop/revoke.
-- [ ] Provide a **bounded one-shot** MCP screenshot using the existing FLAMORIS MCP infrastructure.
+- [x] Author code + deterministic tests for target identity, sizing, ROI, bounds and session lifetime.
+- [x] Create a minimal human-visible EXE with target selection, capture indicator and stop/revoke.
+- [x] Provide a **bounded one-shot** MCP screenshot using the existing FLAMORIS MCP infrastructure.
 - [ ] Demonstrate a screenshot of a consented Window in a real Windows session with full metadata and no unrelated content.
 - [ ] Verify window-close, permission revoke, target reuse, lock/secure content and oversized image paths.
 
@@ -74,7 +83,7 @@ This file separates **design readiness**, **source implementation**, **Windows h
 
 ## Known risks / decisions still open
 
-- WGC semantics and actual capture of minimized/occluded/protected windows need proof; a screenshot permission does not imply remote or headless capture.
+- WGC semantics and real capture of occluded/protected windows need proof (minimized/hidden are rejected by source policy); a screenshot permission does not imply remote or headless capture.
 - MCP client image support and video transfer limits vary; metadata/bytes receipt does not prove the client can view the video.
 - Recording event traces may expose sensitive user data; keyboard free text and cross-window global hooks are **not** accepted defaults.
 - A rectangle/monitor includes whatever was visible in that region; stronger consent and preview are essential.
@@ -82,9 +91,10 @@ This file separates **design readiness**, **source implementation**, **Windows h
 
 ## Next concrete deliverable
 
-**A small, permissioned real-Windows screenshot PoC using one DLL + one GUI EXE + one MCP image query**. Update this file from actual CI and physical test evidence after implementation, not from planned design alone.
+**Run the win-x64 preview on a physical interactive Windows desktop and complete [WINDOWS-ACCEPTANCE.md](docs/WINDOWS-ACCEPTANCE.md), including a real selected-window MCP image displayed by a client.** Source implementation is complete for this slice; P1 acceptance remains open. Measure GPU/CPU peak, DPI geometry, protected/minimized/occluded behavior and revoke/lock responsiveness before a release.
 
 Details: [Setup](docs/SETUP.md) · [Architecture](docs/ARCHITECTURE.md) · [Privacy](docs/SECURITY-PRIVACY.md) · [Test plan](docs/TEST-PLAN.md).
 
 Selective-observation contract: [基本設計 v0.1](docs/BASIC-DESIGN.md).
+
 

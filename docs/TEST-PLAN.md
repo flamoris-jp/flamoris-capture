@@ -1,6 +1,6 @@
 # Verification & Acceptance Plan
 
-**Status:** plan only. No executable tests or live Windows acceptance exist in this repository as of 2026-10-22.
+**Status:** executable pure contract/session/image-policy/adapter tests and an optional official-client bridge integration now exist in `tests/Flamoris.Capture.Tests`. Windows CI enables the latter using synthetic pixels. Physical WGC/display acceptance has not been executed; use [WINDOWS-ACCEPTANCE](WINDOWS-ACCEPTANCE.md). CI/contract results are recorded separately in [PROGRESS](../PROGRESS.md). Future video/region/trace cases remain plans.
 
 ## Test layers
 
@@ -65,4 +65,5 @@ Track at minimum: latency to first frame, dropped frame rate, CPU/GPU/memory use
 `unit-pass` does not imply `Windows-display-pass`. `Window capture pass` does not imply `region/monitor pass`. `recording bytes delivered` does not imply `AI viewed/analyzed video`. `user action + visual change` is helpful diagnostic evidence, not a causal proof.
 
 Update [PROGRESS.md](../PROGRESS.md) only with verified evidence. Follow [Privacy & security](SECURITY-PRIVACY.md) in all test fixtures and logs.
+
 

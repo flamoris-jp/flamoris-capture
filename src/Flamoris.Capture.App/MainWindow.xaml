@@ -1,0 +1,19 @@
+<Window x:Class="Flamoris.Capture.App.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="FLAMORIS Capture" Width="980" Height="720" MinWidth="760" MinHeight="500">
+  <DockPanel>
+    <Menu DockPanel.Dock="Top"><MenuItem x:Name="McpMenu" Header="MCP / AI" /></Menu>
+    <StatusBar DockPanel.Dock="Bottom"><TextBlock x:Name="Status" Text="撮影 OFF / MCP共有 OFF" /><Separator/><ContentControl x:Name="McpIndicator" /></StatusBar>
+    <StackPanel DockPanel.Dock="Top" Margin="16">
+      <TextBlock Text="1つのウィンドウを選んで観測" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,10" />
+      <TextBlock Text="選択したウィンドウ内の情報が写ります。撮影とMCP共有は別々に許可します。" TextWrapping="Wrap" Margin="0,0,0,12" />
+      <DockPanel><Button DockPanel.Dock="Right" Content="一覧を更新" Click="RefreshWindows" Padding="12,6" Margin="8,0,0,0"/><ComboBox x:Name="WindowsList" MinWidth="360" /></DockPanel>
+      <WrapPanel Margin="0,10,0,0">
+        <Button Content="このウィンドウの撮影を許可" Click="SelectWindow" Padding="12,7" Margin="0,0,8,0" />
+        <Button x:Name="CaptureButton" Content="静止画を取得" Click="CaptureLocal" Padding="12,7" Margin="0,0,8,0" />
+        <Button Content="すべて停止・許可解除" Click="StopCapture" Padding="12,7" />
+      </WrapPanel>
+      <CheckBox x:Name="Share" Content="この対象の画像をMCPで共有する（接続はMCP / AIメニュー）" Checked="ChangeSharing" Unchecked="ChangeSharing" Margin="0,14,0,8" />
+      <TextBlock x:Name="TargetLabel" Text="対象未選択" TextTrimming="CharacterEllipsis" />
+    </StackPanel>
+    <Border Background="#20232A" Margin="16,0,16,16" CornerRadius="6"><Image x:Name="Preview" Stretch="Uniform" Margin="10" /></Border>
+  </DockPanel>
+</Window>

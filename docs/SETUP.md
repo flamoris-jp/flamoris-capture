@@ -1,94 +1,99 @@
-# Setup & Development / セットアップ
+# Setup & development
 
-## Current state (2026-10-22)
+**Current slice:** one selected window, still image, reusable DLL + WPF EXE + MCP. Video/region/monitor/events are future work. See [ADR 0001](decisions/0001-one-window-screenshot.md).
 
-This is a **documentation/bootstrap repository**. It does not yet contain a .NET solution, `src/` tree, runnable `Capture.exe`, NuGet DLL, installer, packaged MCP bridge, or executable tests. Do **not** expect a build or startup command to work today.
+## Prerequisites
 
-The purpose of this guide is to make the first implementation reproducible without inventing build paths or claiming a verified Windows install.
+- .NET 10 SDK; `global.json` accepts the latest installed 10.0 feature band.
+- An interactive Windows desktop with WGC and a D3D11 hardware device for real capture. API floor is Windows build 19041; win-x64 is the preview distribution target. Real OS/GPU support remains subject to acceptance.
+- Ordinary current-user execution; no administrator permission, service, GPU daemon, secret environment setup or private package feed is required.
+- Public NuGet restore: Flamoris.Mcp.Core and Flamoris.Mcp.Wpf **1.3.1**, plus their transitive logging/official MCP SDK dependencies. No DLL vendoring.
 
-## 1. Intended development environment
-
-- **Windows desktop:** Windows 10/11 is a design target. Exact minimum build, WGC API availability, and supported graphics/display configurations **must be confirmed** before the first beta; locked session/secure desktop support is **not promised**.
-- **SDK:** .NET 10 SDK is the proposed baseline to align with existing FLAMORIS Windows projects. Verify SDK/runtime/Windows SDK requirements when source projects are added.
-- **Git:** Git and optionally GitHub CLI (`gh`) for authenticated repository access. This repository is currently public.
-- **Display:** A real interactive logged-in Windows session, target application window, GPU/graphics driver and (for video) an encoder path will be needed for end-to-end tests.
-- **External dependencies:** FLAMORIS MCP Core is an intended reusable dependency, not yet a configured PackageReference; pin a reviewed released version before implementation.
-
-## 2. Obtain the repository
-
-With GitHub CLI already signed in:
+For an authenticated checkout:
 
 ```powershell
 gh auth status
 gh repo clone flamoris-jp/flamoris-capture
 cd flamoris-capture
-git status
 ```
 
-Or clone the public repository via your usual Git tooling. Authentication problems should be resolved through `gh auth login` or the connected GitHub integration; do not use GitHub account passwords over HTTPS.
+If required, run `gh auth login`; use `gh auth setup-git` for later authenticated Git operations. Do not use a GitHub account password for Git.
 
-## 3. Read before implementing
-
-1. [AGENTS.md](../AGENTS.md): repository rules.
-2. [README.md](../README.md): product role and what is **not implemented**.
-3. [ARCHITECTURE.md](ARCHITECTURE.md): proposed DLL/EXE/MCP separation and ownership.
-4. [SECURITY-PRIVACY.md](SECURITY-PRIVACY.md): explicit consent, capture scope, safe event recording and retention.
-5. [TEST-PLAN.md](TEST-PLAN.md): phase gates and Windows acceptance matrix.
-6. [PROGRESS.md](../PROGRESS.md): evidenced status.
-7. [BASIC-DESIGN.md](BASIC-DESIGN.md): metadata-first observation, time/index contracts, resource budgets and implementation slices.
-
-Initial requirements were captured in [private Issue Inbox #9](https://github.com/flamoris-net/flamoris-issue/issues/9); request access if necessary.
-
-## 4. Proposed implementation layout (NOT created yet)
-
-```text
-src/
-  Flamoris.Capture.Core/          # UI/MCP-neutral contracts and bounds
-  Flamoris.Capture.Windows/       # Windows capture/encoder backend
-  Flamoris.Capture.App/           # Standalone Windows GUI host
-  Flamoris.Capture.Mcp/           # Typed MCP tools over App capture session
-tests/
-  Flamoris.Capture.Tests/
-docs/
-  SETUP.md ARCHITECTURE.md BASIC-DESIGN.md SECURITY-PRIVACY.md TEST-PLAN.md
-PROGRESS.md
-```
-
-Choose actual assembly names and solution structure in a reviewed first PR. Do not create an abstract framework or duplicate `Flamoris.Mcp.Core` grant/transport plumbing.
-
-## 5. Commands after the first solution exists
-
-**These are illustrative templates, NOT verified instructions for the current checkout:**
+## Build / test / preview bundle
 
 ```powershell
-dotnet --info
-# After adding and documenting the actual .slnx/.sln:
-# dotnet restore <actual-solution-path>
-# dotnet build <actual-solution-path> -c Release
-# dotnet test <actual-solution-path> -c Release
-# dotnet run --project <actual-app-project>
+dotnet restore Flamoris.Capture.slnx
+dotnet build Flamoris.Capture.slnx -c Release --no-restore
+dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
+./scripts/publish.ps1
+./artifacts/win-x64/Flamoris.Capture.App.exe
 ```
 
-A first real PR must replace placeholders with tested commands, identify the Windows SDK/Windows App SDK references actually required, and document dependencies (including encoder licensing) and clean-machine prerequisites. Linux headless tests cannot prove GUI capture on real Windows.
+`publish.ps1` creates a self-contained app and bridge in one `artifacts/win-x64` folder. Keep the folder intact. It does not install a service, publish a GitHub release, sign binaries or change any production machine.
 
-## 6. Minimum hands-on test after first implementation
+`dotnet run --project src/Flamoris.Capture.App` is sufficient for local preview. For local MCP from that development output, put the published `Flamoris.Capture.Bridge.exe` and its dependencies beside the development app, or use the published app bundle directly. The bridge is a thin entry point to Core's implementation, not a second MCP server.
 
-1. Start the EXE in an interactive Windows session; verify capturing is **off** by default.
-2. Select a specific test window in the EXE and authorize it.
-3. Capture **one** still PNG or JPEG locally, verify content, size, target identity and DPI metadata.
-4. Explicitly enable MCP disclosure and use an approved MCP client to request that **same target**. Verify the client actually receives/render an image.
-5. Revoke access; verify further reads fail. Close/reopen window and verify stale handles cannot capture another target.
-6. Test negative coordinates/mixed DPI and window resize. Record the actual Windows build, monitor layout and graphics driver in test evidence; do not commit private screen content.
-7. Only after the still path is sound, test rectangle/monitor modes, video encoding and trace recording.
+Linux can cross-build with the repository's `EnableWindowsTargeting` and run the pure Core/MCP contract tests. WGC/WPF execution requires Windows. The transport test is explicitly skipped unless `FLAMORIS_CAPTURE_TEST_BRIDGE` is set; Windows CI sets it to the published bridge path and must pass that test.
 
-## 7. Security & data handling
+```powershell
+$env:FLAMORIS_CAPTURE_TEST_BRIDGE = (Resolve-Path artifacts/win-x64/Flamoris.Capture.Bridge.exe).Path
+dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
+```
 
-- Never record passwords, clipboard content, IME composition, freeform keystrokes or unrelated windows by default.
-- Do not put private recordings, logs containing window titles, session tokens, local file paths or user data in commits, CI artifacts or issue attachments.
-- Capturing a monitor or selected rectangle may include third-party windows and notifications. Show scope and secure separate permissions for capture and AI disclosure.
-- Use bounded buffers, cancellation, expiration and secure cleanup policies; see [Privacy](SECURITY-PRIVACY.md).
+## Local capture and sharing
 
-## 8. PR workflow
+1. Refresh windows, choose one, click **このウィンドウの撮影を許可**, and confirm the bound target's current display name. No frame is acquired before consent.
+2. Click **静止画を取得** to preview locally. Each shot stops acquisition after one frame. There is no background recorder.
+3. Check **この対象の画像をMCPで共有する** separately. Then use **MCP / AI → 接続** and choose **Read only**; this product rejects Edit connections.
+4. The shared **MCP / AI → 設定** dialog supports Manual, OpenAI tunnel-client and Hub provider settings. Auto-connect cannot bypass capture/sharing consent, which reset at restart. Provider preferences are current-user local settings, not source-controlled deployment defaults. Credentials use the shared credential handling; do not put transient capability JSON in Issues or Git.
+5. For Manual, copy the transient client connection configuration from the shared settings dialog into the MCP client. The capability is scoped to this running session and is invalid after revoke/target change/exit. For Hub, configure a reviewed catalog with `mcp.context` plus the two tools below; no Hub/server catalog is modified by this repository's build.
+6. Uncheck sharing to revoke MCP. **すべて停止・許可解除** also clears the target and local preview. Lock, suspend/disconnect, target destruction and shutdown stop the session; unlocking never resumes consent automatically.
 
-Create a short-lived feature branch, update the closest tests/docs, submit a focused PR, and note **source complete vs tested on Windows vs released** separately. Read [PROGRESS.md](../PROGRESS.md) for gates. No new backend should silently enable persistent surveillance or arbitrary file access.
+No window enumeration or target changes are exposed to AI. Window titles appear only in the local picker/confirmation. Broader monitor or rectangle capture is not available.
 
+## MCP tools
+
+Use `mcp.context` first. Its `documentToken` is the Capture `sessionId`; its `runtimeId` and `documentToken` can also be supplied as the Core `guard`. Example Core wire arguments:
+
+```json
+{"input":{"sessionId":"<documentToken>"}}
+```
+
+Use this with `capture.session.get` to retrieve metadata, consent state, supported queries and effective limits. It contains no image or window list.
+
+```json
+{
+  "input": {
+    "sessionId": "<documentToken>",
+    "format": "png",
+    "maxEdge": 1280,
+    "roi": {"x":0,"y":0,"width":640,"height":480},
+    "requireExactSize": false
+  },
+  "guard": {"runtimeId":"<runtimeId>","documentToken":"<documentToken>"}
+}
+```
+
+Use this with `capture.screenshot.get`. ROI is optional and expressed in source physical pixels; omit it for the whole selected window. Requests reject unknown/duplicate properties, missing required fields, invalid bounds and oversized dimensions. `format` defaults to `jpeg`, maxEdge to 1280. Hard output edge is 1920; encoded bytes <=1 MiB. `requireExactSize` prevents additional byte-budget downscaling after the initial maxEdge resize; it does not upsize. Response includes exactly one standard PNG/JPEG MCP image and metadata (`sha256`, dimensions, ROI/scales, actual quality, source geometry/DPI, QPC ticks, UTC and permission epoch). Bytes are not duplicated in structured metadata.
+
+Tool names may acquire an external namespace when routed through a Hub. The tools own no file/network/process/shell authority. Video tools in BASIC-DESIGN remain unimplemented.
+
+## Embed the DLL
+
+Reference `Flamoris.Capture.Core` and `Flamoris.Capture.Windows` from a Windows .NET 10 host. On the host's local target-selection UI, obtain a `WindowChoice` from `WindowTarget.List`, create a `WindowTarget.Select(choice)`, confirm its `DisplayName` and call `CaptureSession.SelectAndAllow(target)`. Construct the session with `new WindowCaptureBackend()`.
+
+Use `session.Info.SessionId` in `ScreenshotRequest`, then await `session.CaptureAsync(request, disclosure: false, cancellationToken)`. The result owns encoded bytes and metadata; it does not save a file. The embedding host owns consent UI, preview removal, idle `CheckTarget`, lock/disconnect/suspend handling and disposal, as demonstrated by the EXE. The capture DLL itself neither opens MCP nor owns a second user consent authority.
+
+For MCP, reference `Flamoris.Capture.Mcp` and adapt the same session with `CaptureMcpHost`. Do not instantiate a second session/target for AI requests. Core authorization is in addition to `session.SetSharing(true)`, not a replacement.
+
+## Troubleshooting
+
+- `target_lost`: reselect and authorize a live window; the app never follows a replacement window.
+- `frame_unavailable`: restore a minimized/hidden window, let resizing settle, retry. Protected/secure/occluded behavior is not guaranteed; there is no broader capture fallback.
+- `unsupported_capability`: required WGC capability/target kind is unavailable.
+- `resource_limit`: shrink ROI/maxEdge or allow byte-budget scaling. Source >8,294,400 pixels or edge >8192 is rejected before GPU acquisition.
+- `stale_session`, `unauthorized`, `forbidden`: obtain new consent and connection/context; do not reuse an old capability/session ID.
+- `busy`: one acquisition is still running/cleaning up; no requests are queued.
+- `timeout`: a shot exceeded the 5-second deadline. Native driver/encoder cleanup may outlive result cancellation; Stop still revokes immediately.
+
+See [Windows acceptance](WINDOWS-ACCEPTANCE.md) before calling the preview tested on physical Windows or released.

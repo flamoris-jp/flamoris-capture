@@ -1,0 +1,34 @@
+name: build-and-test
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore Flamoris.Capture.slnx
+      - run: dotnet build Flamoris.Capture.slnx -c Release --no-restore
+      - name: Publish standalone app and Core-based bridge
+        run: ./scripts/publish.ps1
+      - name: Test contracts and actual MCP bridge with synthetic pixels
+        shell: pwsh
+        run: |
+          $env:FLAMORIS_CAPTURE_TEST_BRIDGE = (Resolve-Path artifacts/win-x64/Flamoris.Capture.Bridge.exe).Path
+          dotnet test tests/Flamoris.Capture.Tests -c Release --no-build --logger trx --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flamoris-capture-win-x64-preview
+          path: artifacts/win-x64/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults/
