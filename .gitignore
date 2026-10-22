@@ -25,3 +25,21 @@ temp/
 .cache/
 
 # Language- and runtime-specific ignores belong in each generated repository.
+
+
+# .NET builds and local captures
+**/bin/
+**/obj/
+TestResults/
+artifacts/
+*.user
+*.suo
+*.png
+*.jpg
+*.jpeg
+*.mp4
+
+# Local deployment bindings / Python test outputs
+deployment.json
+**/__pycache__/
+*.pyc

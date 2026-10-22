@@ -1,6 +1,8 @@
 # FLAMORIS Capture 基本設計 v0.1
 
-**更新:** 2026-10-22 / **状態:** 実装前の設計ベースライン。API名・数値は本設計での提案であり、リリース済み仕様ではない。
+> Current implementation (0.2.0): [ADR 0002](decisions/0002-simple-observation-recording.md), [README](../README.md) and [Setup](SETUP.md). The text below is the earlier broader design/acceptance roadmap; its proposed IDs, tool names, retention numbers and unimplemented labels do not define the current wire contract. Screenshots, bounded recording, selected frames/contact sheets and opt-in physical key/mouse traces now have source implementations. Physical Windows acceptance remains separate.
+
+**更新:** 2026-10-22 / **状態:** 動画観測の設計ベースライン。単一ウィンドウ静止画は[ADR 0001](decisions/0001-one-window-screenshot.md)に従う初期ソース実装あり。実Windows受け入れ・リリースとは別。動画API・数値は設計提案。
 
 ## 1. 目的と成功条件
 
@@ -99,7 +101,7 @@ WGCの`SystemRelativeTime`はコンポジタ描画時のQPC時刻として文書
 
 ## 6. MCP操作契約
 
-**すべて予定のツール名。現時点では登録・実装なし。** 全要求はCoreの認可/RequestGuardに加えて現在の`sessionId`に結び付ける。recording/selection/eventのIDはそのsession内だけで有効。JSONスキーマは閉じたDTOとし、未知フィールド、NaN、過大配列を拒否する。
+**現実装は `capture.session.get` と `capture.screenshot.get` のみ。** これ以外は予定のツール名で、登録・実装なし。静止画の実際の引数・上限・接続方法は[SETUP](SETUP.md)と[ADR 0001](decisions/0001-one-window-screenshot.md)を参照。 全要求はCoreの認可/RequestGuardに加えて現在の`sessionId`に結び付ける。recording/selection/eventのIDはそのsession内だけで有効。JSONスキーマは閉じたDTOとし、未知フィールド、NaN、過大配列を拒否する。
 
 | Tool | 主入力（共通sessionIdは省略） | 結果 / 副作用 |
 |---|---|---|
@@ -241,3 +243,4 @@ stateDiagram-v2
 - [IMFMediaSource::Start](https://learn.microsoft.com/en-us/windows/win32/api/mfidl/nf-mfidl-imfmediasource-start): キーフレームからのdecodeと欠落通知。
 
 関連: [Architecture](ARCHITECTURE.md) · [Privacy](SECURITY-PRIVACY.md) · [Progress](../PROGRESS.md)。
+

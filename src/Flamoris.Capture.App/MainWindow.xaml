@@ -1,0 +1,42 @@
+<Window x:Class="Flamoris.Capture.App.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="FLAMORIS Capture" Width="1100" Height="740" MinWidth="780" MinHeight="500">
+  <DockPanel>
+    <Menu DockPanel.Dock="Top">
+      <MenuItem x:Name="McpMenu" Header="MCP / AI" />
+      <MenuItem Header="設定"><MenuItem x:Name="ShowNoticeSetting" Header="安全確認メッセージを表示する" IsCheckable="True" Click="ChangeNoticeSetting" /></MenuItem>
+    </Menu>
+    <StatusBar DockPanel.Dock="Bottom"><TextBlock x:Name="Status" Text="画面共有 OFF / 操作記録 OFF"/><Separator/><ContentControl x:Name="McpIndicator"/></StatusBar>
+    <Border DockPanel.Dock="Top" Background="#F3F4F6" Padding="8">
+      <StackPanel>
+        <WrapPanel VerticalAlignment="Center">
+          <ComboBox x:Name="WindowsList" Width="330" Margin="0,0,6,6" ToolTip="取得対象ウィンドウ" />
+          <Button Content="対象にする" Click="SelectWindow" Padding="10,4" Margin="0,0,6,6"/>
+          <Button Content="更新" Click="RefreshWindows" Padding="10,4" Margin="0,0,12,6"/>
+          <CheckBox x:Name="Share" Content="画面共有" Checked="ChangeSharing" Unchecked="ChangeSharing" VerticalAlignment="Center" Margin="0,0,16,6"/>
+          <CheckBox x:Name="Operations" Content="操作記録" Checked="ChangeOperations" Unchecked="ChangeOperations" VerticalAlignment="Center" Margin="0,0,12,6"/>
+          <Button Content="すべて停止" Click="StopCapture" Padding="10,4" Margin="0,0,0,6"/>
+        </WrapPanel>
+        <WrapPanel>
+          <Button x:Name="CaptureButton" Content="静止画を取得" Click="CaptureLocal" Padding="10,4" Margin="0,0,6,0"/>
+          <Button x:Name="RecordButton" Content="録画開始" Click="StartRecording" Padding="10,4" Margin="0,0,6,0" ToolTip="音声なし・10fps・最大15分"/>
+          <Button x:Name="StopRecordButton" Content="録画停止" Click="StopRecording" Padding="10,4" Margin="0,0,6,0"/>
+          <Button x:Name="SaveVideoButton" Content="MP4を保存" Click="SaveVideo" Padding="10,4" Margin="0,0,6,0"/>
+          <Button x:Name="SaveEventsButton" Content="操作履歴を保存" Click="SaveEvents" Padding="10,4"/>
+          <TextBlock x:Name="TargetLabel" Text="対象未選択" VerticalAlignment="Center" Margin="12,0,0,0" MaxWidth="300" TextTrimming="CharacterEllipsis"/>
+        </WrapPanel>
+      </StackPanel>
+    </Border>
+    <StackPanel DockPanel.Dock="Bottom" Margin="8">
+      <DockPanel><Button Content="録画を見る" Click="ViewRecording" Padding="10,4" Margin="0,0,6,0" DockPanel.Dock="Left"/>
+        <Button x:Name="PlayButton" Content="再生" Click="PlayRecording" Padding="10,4" DockPanel.Dock="Left"/>
+        <TextBlock x:Name="FrameLabel" Text="録画なし" VerticalAlignment="Center" Margin="10,0,0,0"/></DockPanel>
+      <Slider x:Name="FrameSlider" Minimum="0" Maximum="0" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="SelectFrame" Margin="0,4,0,0"/>
+    </StackPanel>
+    <Grid Background="#20232A" Margin="8,4,8,0">
+      <Image x:Name="Preview" Stretch="Uniform" Margin="8"/>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" IsHitTestVisible="False">
+        <Border x:Name="RecordBadge" Visibility="Collapsed" Background="#C62828" CornerRadius="4" Padding="12,7" Margin="0,0,8,0"><TextBlock Text="● 録画中" Foreground="White" FontWeight="Bold"/></Border>
+        <Border x:Name="OperationBadge" Visibility="Collapsed" Background="#FFD54F" CornerRadius="4" Padding="12,7"><TextBlock Text="操作記録中" Foreground="#282000" FontWeight="Bold"/></Border>
+      </StackPanel>
+    </Grid>
+  </DockPanel>
+</Window>

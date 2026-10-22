@@ -1,6 +1,8 @@
 # Architecture / 設計境界
 
-**Status:** proposed design, not implemented. Updated 2026-10-22.
+> Current implementation (0.2.0): [ADR 0002](decisions/0002-simple-observation-recording.md), [README](../README.md) and [Setup](SETUP.md). The text below is the earlier broader design/acceptance roadmap; its proposed IDs, tool names, retention numbers and unimplemented labels do not define the current wire contract. Screenshots, bounded recording, selected frames/contact sheets and opt-in physical key/mouse traces now have source implementations. Physical Windows acceptance remains separate.
+
+**Status:** one-window screenshot source implemented; broader modes/video/events below remain proposed. Updated 2026-10-22. Actual source ownership, fixed packages, limits and caveats: [ADR 0001](decisions/0001-one-window-screenshot.md). Physical Windows acceptance and release remain pending.
 
 ## Product contract
 
@@ -38,7 +40,7 @@ For `region`, compare WGC display capture followed by validated cropping with ot
 
 Windows Graphics Capture is the first backend to evaluate, not an unconditional guarantee. Platform permission/selection UI, target size changes, occlusion, minimized windows, protected media, secure desktops and encoder availability require real tests.
 
-## Suggested assembly responsibilities (names provisional)
+## Assembly responsibilities
 
 - `Flamoris.Capture.Core`: capture target descriptors, session state, authorization checks, timestamps, image/video result descriptors, hard resource budget interfaces. No WPF or MCP dependency.
 - `Flamoris.Capture.Windows`: OS capture acquisition, Windows interop, frame lifetimes, video encode; no direct public network/HTTP or file browser.
@@ -79,4 +81,5 @@ The product-level baseline is [基本設計 v0.1](BASIC-DESIGN.md). Where earlie
 - FLAMORIS Observer: infrastructure/server observation; separate responsibility.
 
 See [Privacy and security](SECURITY-PRIVACY.md) before implementing any part of this design.
+
 
