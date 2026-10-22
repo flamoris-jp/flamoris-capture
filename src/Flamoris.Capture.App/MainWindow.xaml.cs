@@ -48,7 +48,12 @@ public partial class MainWindow : Window
     }
     private async Task<McpDesktopAttachment> Attach(McpPermission permission)
     {
-        if (permission != McpPermission.ReadOnly) throw new McpFault(McpErrors.Forbidden);
+        if (permission != McpPermission.ReadOnly)
+        {
+            MessageBox.Show(this, "Captureは読み取り専用で接続します。\n接続確認画面で「読み取り専用」を選択してください。",
+                "FLAMORIS Capture", MessageBoxButton.OK, MessageBoxImage.Information);
+            throw new McpFault(McpErrors.Forbidden);
+        }
         var boundary = new McpBoundary(host, host.Tools(), new McpOptions { RequestTimeoutMs = 5000, MaxConcurrentRequests = 1 },
             new McpDiagnostics(FlamorisLogger.Create()));
         try { return new(boundary, await boundary.EnableAsync(McpPermission.ReadOnly)); }
@@ -60,9 +65,11 @@ public partial class MainWindow : Window
         if (!closing) _ = Dispatcher.BeginInvoke(new Action(() =>
         {
             if (closing) return;
-            Preview.Source = null;
-            Share.IsChecked = session.Info.SharingAllowed;
-            if (!session.Info.CaptureAllowed) TargetLabel.Text = "対象未選択";
+            var info = session.Info;
+            // Sharing changes revoke MCP grants, but local capture consent and its preview remain valid.
+            // SelectWindow clears the previous target's preview explicitly; Stop/OS loss clears it here.
+            if (!info.CaptureAllowed) { Preview.Source = null; TargetLabel.Text = "対象未選択"; }
+            Share.IsChecked = info.SharingAllowed;
             mcp.Invalidate(); UpdateStatus();
         }));
     }
