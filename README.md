@@ -16,7 +16,7 @@ It is a standalone Windows observation product and a reusable library, **not** a
 
 - **Capture engine (DLL):** bounded screenshots, short video recordings, capture target identity, frame timestamps, cropping and encoding.
 - **Standalone Windows app (EXE):** choose a window, rectangle, or monitor; preview, record/stop, manage explicit grants, and observe status.
-- **MCP capture adapter:** expose approved observation requests and return bounded image or transferable video artifacts, reusing [Flamoris.Mcp.Core](https://github.com/flamoris-jp/flamoris-mcp-core).
+- **MCP capture adapter:** expose approved observation requests and return bounded images and recording metadata, reusing [Flamoris.Mcp.Core](https://github.com/flamoris-jp/flamoris-mcp-core). Raw video export is a later, separate contract.
 - **Optional interaction trace (later phase):** application-scoped mouse actions, approved shortcuts, window-resize and application events synchronized with video; raw text/keylogging is not a goal.
 
 ### What it does not own / 持たない責任
@@ -59,6 +59,14 @@ One recording session and its permissions are controlled by the Capture host. Th
 
 See [Architecture](docs/ARCHITECTURE.md), [Privacy & security](docs/SECURITY-PRIVACY.md), and [Test plan](docs/TEST-PLAN.md).
 
+## AI video observation / 必要なコマだけ観測
+
+**Proposed basic design, not implemented:** keep recordings in Capture and let AI request only the images it needs. The default flow is **metadata summary → contact sheet → selected frame / ROI → optional comparison and event correlation**. Do not automatically attach a whole video or every frame.
+
+指定時刻と0始まりのコマ番号の両方を扱い、要求時刻と実取得時刻、欠落、サイズ変更を明示する。人間は動画を再生し、AIは必要なコマだけを確認する。
+
+Read [基本設計 v0.1](docs/BASIC-DESIGN.md) for the proposed MCP contracts, time/index rules, single-image result budget, recording/asset lifecycle, and acceptance criteria. No tool listed there is callable yet.
+
 ## Getting started
 
 **There is not yet a runnable binary.** For developers and reviewers, start with [Setup & development](docs/SETUP.md). It explains prerequisites, how to obtain the repository, what is not available yet, and the proposed first implementation slice.
@@ -69,7 +77,7 @@ When code is introduced, its actual solution/project paths and verified `dotnet 
 
 1. **Foundation:** define stable capture session/target/grant boundaries, one DLL, a minimal EXE, and one approved Windows screenshot via MCP.
 2. **Target modes:** window, rectangle, monitor; DPI/multi-display normalization and preview.
-3. **Video:** bounded start/status/stop/cancel, MP4 candidate, chunked asset delivery, timeout and cleanup.
+3. **Video observation:** bounded start/status/stop/cancel, MP4 candidate, summary, indexed frame retrieval, contact sheets and comparison; timeout and cleanup. Raw video transfer is deferred to a separate bounded export design.
 4. **Interaction trace:** opt-in application-scoped operations with synchronized timestamps; redact text and sensitive inputs.
 5. **Productization:** packaging, CI, real Windows hands-on acceptance, diagnostics, and HowTo/test-report consumers.
 
@@ -110,3 +118,4 @@ Source code is licensed under [Apache License 2.0](LICENSE), unless noted otherw
 FLAMORIS software is provided as-is, with no guaranteed support. You can use, adapt and distribute Apache-2.0-licensed code, including commercially, under its terms. AI-assisted self-support through repository documentation, Issues, code, and tests is welcome.
 
 > **FLAMORIS Capture is a planned product; capabilities listed above are design intentions until a release and test evidence say otherwise.**
+

@@ -41,9 +41,13 @@ Treat each event record as potentially sensitive. Hide/mask events from protecte
 
 ## Assets, retention, logs
 
-- In-memory image buffers and temporary video files have explicit lifetime, quotas and TTL; clean up on stop/cancel/error/revoke/expiry.
+The [basic design](BASIC-DESIGN.md) distinguishes normal recording stop from revocation. Normal stop finalizes an asset for already authorized observation until TTL; it does not silently widen sharing. Revoke invalidates grants/IDs and in-flight disclosure, including cached frames, contact sheets, diffs, event pages and metadata. A separate local capture grant may remain active when only MCP sharing is revoked. Target loss/replacement and OS lock invalidate the observation workspace; recovered local recordings require human review and a new grant before sharing.
+
+All derived images and event metadata inherit the parent recording's scope and maximum lifetime. Validate authorization before decoding and again immediately before delivery. Cached pixels must not bypass revoke/expiry. Returned pixels already received by a client cannot be recalled.
+
+- Release acquisition buffers on normal stop and preserve only the bounded finalized recording until TTL. Clean up cancelled/failed recordings and expired temporary files; revoke clears MCP derivatives/handles while deliberately retained local recordings stay under the human's control.
 - Persist only when the human deliberately selects an output destination; no automatic cloud upload or hidden long-term store.
-- Check video chunks using length, offset and SHA-256; treat uncertain transfer differently from a completed artifact.
+- Initial MCP observation returns selected images, not video chunks. If future raw-video export is added, verify length, offset and SHA-256 under a separately reviewed bounded transfer contract.
 - Diagnostics may include counters, error codes and coarse performance timings, but **not** raw images, window titles, typed content, secret paths, tokens or video.
 - CI and Issues must not publish private user captures. Use synthetic windows/test patterns where possible.
 - Encrypt/sign only when appropriate and documented; do not market ephemeral local capture as securely encrypted end-to-end unless actually verified.
@@ -53,3 +57,4 @@ Treat each event record as potentially sensitive. Hide/mask events from protecte
 Before calling any MVP feature ready, demonstrate refusal after revoke, target reuse and replacement rejection, cross-user/unauthorized-client refusal, safe stop under capture load, OS-protected content behavior, and no data leaking to logs or unintended output channels.
 
 Read [Test plan](TEST-PLAN.md) for acceptance. This document is a design constraint, **not evidence that a secure implementation already exists**.
+

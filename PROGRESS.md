@@ -15,7 +15,8 @@ This file separates **design readiness**, **source implementation**, **Windows h
 | Standalone EXE and target selection | Not started | Not started | Not started | Not available |
 | MCP grants and image results | Not started | Not started | Not started | Not available |
 | Window / rectangle / monitor coverage | Not started | Not started | Not started | Not available |
-| Short video, bounded transfer, cleanup | Not started | Not started | Not started | Not available |
+| Short video, indexed observation, cleanup | Not started | Not started | Not started | Not available |
+| Metadata-first video observation, frame selection, contact sheets | Basic design v0.1 documented; code not started | Documentation consistency review only | Not started | Not available |
 | Interaction-event trace and synchronization | Not started | Not started | Not started | Not available |
 | Windows packaging and published binaries | Not started | Not started | Not started | Not available |
 
@@ -28,6 +29,14 @@ This file separates **design readiness**, **source implementation**, **Windows h
 - **No capture code, recorder, Windows executable, tests, CI pipeline, package or real hardware verification has been implemented as part of this documentation task.**
 
 ## Roadmap and gates
+
+### 2026-10-22 — Selective video observation design
+
+- Added [基本設計 v0.1](docs/BASIC-DESIGN.md): summary → contact sheet → selected frame/ROI → comparison/events.
+- Specified time and 0-based frame selectors, actual timestamps, gaps, geometry changes, bounded selection and single-image MCP results.
+- Defined proposed limits, recording finalization, stop vs revoke, asset TTL, derived-cache invalidation and staged acceptance.
+- Checked the current MCP Core image contract (one PNG/JPEG, at most 1 MiB); no new transport or multi-image result is assumed.
+- This is a **documentation baseline**, not an implemented API, validated performance budget, completed P0 or Windows acceptance. OS/backend, codec, memory and package-version decisions remain open.
 
 ### P0 · Define the first screenshot contract
 
@@ -50,7 +59,9 @@ This file separates **design readiness**, **source implementation**, **Windows h
 
 - [ ] Implement rectangle and selected-monitor capture, including negative virtual-monitor coordinates and mixed DPI.
 - [ ] Add bounded recording start/status/stop/cancel, recording indicator and encode failure handling.
-- [ ] Use short-lived asset handles for videos rather than embedding a large file in one MCP response.
+- [ ] Finalize video with a display-order frame index and recording-time/PTS mapping; use short-lived recording IDs without embedding video bytes in MCP.
+- [ ] P2a: summary and selected frame by time/index, actual timestamp and explicit gaps.
+- [ ] P2b: bounded sample selections, contact sheet, ROI and comparable-geometry diff with at most one image per result.
 - [ ] Verify playable output, artifact SHA-256 and size, TTL, cleanup and dropped-frame reporting.
 
 ### P3 · Optional input trace and productization
@@ -74,3 +85,6 @@ This file separates **design readiness**, **source implementation**, **Windows h
 **A small, permissioned real-Windows screenshot PoC using one DLL + one GUI EXE + one MCP image query**. Update this file from actual CI and physical test evidence after implementation, not from planned design alone.
 
 Details: [Setup](docs/SETUP.md) · [Architecture](docs/ARCHITECTURE.md) · [Privacy](docs/SECURITY-PRIVACY.md) · [Test plan](docs/TEST-PLAN.md).
+
+Selective-observation contract: [基本設計 v0.1](docs/BASIC-DESIGN.md).
+

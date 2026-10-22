@@ -35,6 +35,7 @@ Or clone the public repository via your usual Git tooling. Authentication proble
 4. [SECURITY-PRIVACY.md](SECURITY-PRIVACY.md): explicit consent, capture scope, safe event recording and retention.
 5. [TEST-PLAN.md](TEST-PLAN.md): phase gates and Windows acceptance matrix.
 6. [PROGRESS.md](../PROGRESS.md): evidenced status.
+7. [BASIC-DESIGN.md](BASIC-DESIGN.md): metadata-first observation, time/index contracts, resource budgets and implementation slices.
 
 Initial requirements were captured in [private Issue Inbox #9](https://github.com/flamoris-net/flamoris-issue/issues/9); request access if necessary.
 
@@ -49,7 +50,7 @@ src/
 tests/
   Flamoris.Capture.Tests/
 docs/
-  SETUP.md ARCHITECTURE.md SECURITY-PRIVACY.md TEST-PLAN.md
+  SETUP.md ARCHITECTURE.md BASIC-DESIGN.md SECURITY-PRIVACY.md TEST-PLAN.md
 PROGRESS.md
 ```
 
@@ -90,3 +91,4 @@ A first real PR must replace placeholders with tested commands, identify the Win
 ## 8. PR workflow
 
 Create a short-lived feature branch, update the closest tests/docs, submit a focused PR, and note **source complete vs tested on Windows vs released** separately. Read [PROGRESS.md](../PROGRESS.md) for gates. No new backend should silently enable persistent surveillance or arbitrary file access.
+
