@@ -51,6 +51,8 @@ dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
 
 No window enumeration or target changes are exposed to AI. Window titles appear only in the local picker/confirmation. Broader monitor or rectangle capture is not available.
 
+First-time Hub registration and the optional human-run SSH helper: [HUB-CONNECTION.md](HUB-CONNECTION.md).
+
 ## MCP tools
 
 Use `mcp.context` first. Its `documentToken` is the Capture `sessionId`; its `runtimeId` and `documentToken` can also be supplied as the Core `guard`. Example Core wire arguments:

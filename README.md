@@ -30,7 +30,7 @@ dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
 
 The publish script places the app, reusable DLLs, Core-based bridge and self-contained .NET runtime together. Keep the entire folder; the EXE alone is not the bundle. Development can also use `dotnet run --project src/Flamoris.Capture.App`; manual/tunnel MCP needs the published bridge alongside the app. Restore uses public nuget.org, without a GitHub token.
 
-See [Setup](docs/SETUP.md) for the DLL contract, connection instructions and request examples, and [ADR 0001](docs/decisions/0001-one-window-screenshot.md) for implementation limits and decisions.
+See [Setup](docs/SETUP.md) for the DLL contract and request examples, [Hub connection](docs/HUB-CONNECTION.md) for first-time registration, and [ADR 0001](docs/decisions/0001-one-window-screenshot.md) for implementation limits and decisions.
 
 ## Usage
 

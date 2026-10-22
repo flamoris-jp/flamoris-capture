@@ -16,6 +16,13 @@ jobs:
           dotnet-version: '10.0.x'
       - run: dotnet restore Flamoris.Capture.slnx
       - run: dotnet build Flamoris.Capture.slnx -c Release --no-restore
+      - name: Validate PowerShell launcher syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path scripts/hub-registration/connect-capture.ps1), [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -gt 0) { throw ($parseErrors -join "`n") }
       - name: Publish standalone app and Core-based bridge
         run: ./scripts/publish.ps1
       - name: Test contracts and actual MCP bridge with synthetic pixels
@@ -32,3 +39,9 @@ jobs:
         with:
           name: test-results
           path: TestResults/
+  registration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test configuration preservation and failure rollback (no live server)
+        run: python3 -m unittest discover -s tests/hub_registration -v

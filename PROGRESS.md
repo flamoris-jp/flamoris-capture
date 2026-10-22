@@ -11,8 +11,8 @@ This file separates **design readiness**, **source implementation**, **Windows h
 | Deliverable | Source | Automated verification | Windows hands-on | Release |
 |---|---|---|---|---|
 | Product scope, README and initial documentation | ✅ documented | Documentation review only | Not applicable | Not applicable |
-| Screenshot capture DLL | Implemented: WGC, bounded PNG/JPEG/ROI | Full Windows-target cross-build passed; image-policy tests passed | Pending | Not released |
-| Standalone EXE and target selection | Implemented: local selection, consent, preview, Stop | WPF cross-build passed | Pending | Not released |
+| Screenshot capture DLL | Implemented: WGC, bounded PNG/JPEG/ROI | Full Windows-target cross-build passed; image-policy tests passed | User screenshot confirms Cutwork one-shot preview; remaining cases pending | Not released |
+| Standalone EXE and target selection | Implemented: local selection, consent, preview, Stop | WPF cross-build passed | User screenshot confirms target selection/local preview; remaining cases pending | Not released |
 | MCP grants and image results | Implemented: two typed queries, shared Core/Wpf 1.3.1 | Adapter/contracts and actual bridge Windows CI passed (24b035e) | Pending | Not released |
 | Window / rectangle / monitor coverage | Window source only; rectangle/monitor not implemented | Source checks only | Pending | Not released |
 | Short video, indexed observation, cleanup | Not started | Not started | Not started | Not available |
@@ -36,6 +36,14 @@ This file separates **design readiness**, **source implementation**, **Windows h
 - Local evidence: .NET SDK **10.0.402 on Linux**, full solution restore/cross-build (including WPF + WGC), **0 warnings / 0 errors**; **23 contract/policy/adapter test cases passed**, **1 actual-bridge integration explicitly skipped** because a published Windows bridge is not executable here.
 - **Windows CI evidence:** [PR run 39762395221](https://github.com/flamoris-jp/flamoris-capture/actions/runs/39762395221), source commit `24b035e`: build/publish succeeded, **24 passed / 0 skipped**, including the official MCP client against the published bridge with synthetic pixels. The self-contained win-x64 preview artifact was uploaded. The resize-dimension correction is also verified by [updated Windows run 39762778823](https://github.com/flamoris-jp/flamoris-capture/actions/runs/39762778823) at source commit `9ebe73a`: build, publish and bridge tests succeeded. Shutdown UI callbacks are guarded against displaying errors after the host closes. No physical WGC test, real client image rendering, DPI/OS/driver acceptance or release is inferred from contract tests.
 - See [ADR 0001](docs/decisions/0001-one-window-screenshot.md), [Setup](docs/SETUP.md), and the unexecuted [Windows acceptance checklist](docs/WINDOWS-ACCEPTANCE.md).
+
+## 2026-10-22 — First real-Windows preview and Hub registration preparation
+
+- The user supplied a screenshot showing the running Capture EXE displaying a one-window Cutwork still. The visible Capture overlay is absent from its captured Cutwork preview. This confirms that single observed local preview case; OS build, DPI/driver, lock/revoke, resizing and unrelated-app cases remain unverified.
+- Generated `config/hub-capture.example.json` from the actual Core 1.3.1 wire descriptors. A producer-side test pins all three schemas. Video and target-selection tools are not advertised.
+- Added an explicit human-run PowerShell/SSH registration helper, dedicated locally generated token, preservation of current Hub Docker settings, authenticated metadata-only health verification and automatic error rollback. This is a prepared operation; **live registration/desktop MCP image acceptance remain pending execution**.
+- The helper's mocked tests verify environment/security preservation, conflict refusal, success, failure rollback and idempotence; CI parses the PowerShell launcher and runs these tests without production access.
+- Usage and the existing local-prefix/Hub-namespace mapping: [Hub connection](docs/HUB-CONNECTION.md).
 
 ## Roadmap and gates
 

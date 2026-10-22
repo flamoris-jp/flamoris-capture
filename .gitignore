@@ -38,3 +38,8 @@ artifacts/
 *.jpg
 *.jpeg
 *.mp4
+
+# Local deployment bindings / Python test outputs
+deployment.json
+**/__pycache__/
+*.pyc
