@@ -56,6 +56,12 @@ Run this on the **proxy host** in the human's SSH terminal (including PuTTY). Th
 
 After a successful reload, retry **MCP / AI → 接続** in Capture. Do not rerun registration or rotate its credential for a missing route. Confirm the live authenticated desktop connection separately; a configuration test alone does not prove it.
 
+## Read-only connection troubleshooting
+
+Capture currently accepts only Read only. The shared connection dialog also offers Edit for other products; selecting Edit in Capture is rejected locally **before any Hub connection**. Set Read only in settings and again in the connection confirmation. An existing credential entry does not override the selected permission. Updated Capture previews explain this explicitly.
+
+Changing the sharing checkbox invalidates the old MCP grant/session, but the approved local preview stays visible. Selecting another target, stopping, target loss or OS lock clears it.
+
 ## Human desktop steps after registration
 
 1. In Capture, open **MCP / AI → 設定…**.
