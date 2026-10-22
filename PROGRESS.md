@@ -49,7 +49,14 @@ This file separates **design readiness**, **source implementation**, **Windows h
 
 - Human-run Hub registration reported Capture with three tools, preserved the image, and added its dedicated credential. Physical desktop MCP image acceptance is still pending.
 - The user's loaded Nginx configuration showed exact routes for three existing desktop products and no `/desktop/capture` route. Hub catalog registration alone did not publish this endpoint; the original setup instructions omitted this separate proxy step.
-- Added an explicit, separate Nginx route repair that copies the working Cutwork WebSocket block in the same server, backs up privately, checks syntax, reloads and restores on failure. Five mocked route tests (14 total host-helper tests) passed locally; production execution and Capture connection remain pending. No app rebuild or token rotation is required for this route change.
+- Added an explicit, separate Nginx route repair that copies the working Cutwork WebSocket block in the same server, backs up privately, checks syntax, reloads and restores on failure. Five mocked route tests (14 total host-helper tests) passed locally; the user reported successful production Nginx syntax test/reload and a separate authenticated WSS handshake (`SERVER_WSS_AUTH_OK`). Actual Capture connection remains pending. No app rebuild or token rotation is required for this route change.
+
+## 2026-10-22 — Read-only connection diagnosis and local preview fix
+
+- The user's stored Capture preferences showed `Method: Hub`, `Permission: Edit`, the intended Capture endpoint, and an existing Windows credential entry. Capture's app attachment rejects Edit before starting the Hub provider; this explains the observed attempt without a desktop registration. The user must choose Read only in the connection confirmation. WSS server-side authentication success does not prove the separately stored Windows secret matches.
+- Added an explicit product message for unsupported Edit permission rather than only the shared generic connection failure.
+- Fixed sharing ON/OFF clearing the local preview. Sharing changes continue to revoke old MCP grants and cancel stale requests, while valid local capture consent keeps the still visible. Target selection clears the previous target explicitly; Stop, target loss and OS lock still clear the preview.
+- Local full-solution cross-build passed with zero warnings/errors; 24 C# tests passed and the actual Windows-bridge test was explicitly skipped on Linux. Windows CI and the real checkbox/connection acceptance of this fix are tracked separately.
 
 ## Roadmap and gates
 
