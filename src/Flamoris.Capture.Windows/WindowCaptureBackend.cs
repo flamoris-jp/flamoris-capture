@@ -17,7 +17,7 @@ public sealed class WindowCaptureBackend : ICaptureBackend
         try
         {
             token.ThrowIfCancellationRequested(); target.DemandAvailable();
-            var size = target.Item.Size; ImagePolicy.ValidateSource(size.Width, size.Height);
+            var size = target.CaptureSize; ImagePolicy.ValidateSource(size.Width, size.Height);
             var before = target.Geometry(size.Width, size.Height);
             ImagePolicy.Region(size.Width, size.Height, request.Roi);
             using var device = Native.CreateDevice();
@@ -33,7 +33,12 @@ public sealed class WindowCaptureBackend : ICaptureBackend
                     try
                     {
                         if (frame.ContentSize.Width != size.Width || frame.ContentSize.Height != size.Height)
+                        {
+                            // Item.Size may describe its initial size. Learn the current size from WGC,
+                            // reject this potentially clipped surface, and use it on the next one-shot.
+                            target.UpdateCaptureSize(frame.ContentSize);
                             throw new CaptureFault("frame_unavailable");
+                        }
                         token.ThrowIfCancellationRequested();
                         var utc = DateTimeOffset.UtcNow;
                         var bitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(frame.Surface);
@@ -64,8 +69,7 @@ public sealed class WindowCaptureBackend : ICaptureBackend
                 owned = captured.Bitmap;
                 token.ThrowIfCancellationRequested(); target.DemandAvailable();
                 var now = target.Geometry(size.Width, size.Height);
-                var currentSize = target.Item.Size;
-                if (before != now || currentSize.Width != size.Width || currentSize.Height != size.Height)
+                if (before != now)
                     throw new CaptureFault("frame_unavailable");
                 var roi = ImagePolicy.Region(size.Width, size.Height, request.Roi);
                 var pixels = new byte[checked(size.Width * size.Height * 4)]; owned.CopyToBuffer(pixels.AsBuffer());

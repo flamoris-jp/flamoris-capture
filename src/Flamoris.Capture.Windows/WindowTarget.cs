@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Flamoris.Capture.Core;
 using Windows.Graphics.Capture;
+using Windows.Graphics;
 
 namespace Flamoris.Capture.Windows;
 
@@ -14,6 +15,9 @@ public sealed record WindowChoice(nint Handle, string Title)
 public sealed class WindowTarget : ICaptureTarget
 {
     internal GraphicsCaptureItem Item { get; }
+    internal SizeInt32 CaptureSize { get; private set; }
+    internal void UpdateCaptureSize(SizeInt32 size)
+    { ImagePolicy.ValidateSource(size.Width, size.Height); CaptureSize = size; }
     internal nint Handle { get; }
     public string DisplayName => Item.DisplayName;
     private readonly uint pid;
@@ -27,6 +31,7 @@ public sealed class WindowTarget : ICaptureTarget
         using var process = Process.GetProcessById(checked((int)pid));
         processStarted = process.StartTime.ToUniversalTime().Ticks;
         Item = Native.CreateItem(hwnd); // Bind once; never silently retarget a recycled HWND.
+        CaptureSize = Item.Size;
         Item.Closed += ItemClosed;
         if (!IsAlive) { Dispose(); throw new CaptureFault("target_lost"); }
     }
@@ -54,7 +59,7 @@ public sealed class WindowTarget : ICaptureTarget
             throw new CaptureFault("frame_unavailable");
         uint dpi = Native.GetDpiForWindow(Handle);
         if (dpi == 0) throw new CaptureFault("frame_unavailable");
-        return new(width, height, bounds.Left, bounds.Top, dpi, $"{width}x{height}@{bounds.Left},{bounds.Top}:{dpi}");
+        return new(width, height, bounds.Left, bounds.Top, dpi, $"{width}x{height}@{bounds.Left},{bounds.Top},{bounds.Right},{bounds.Bottom}:{dpi}");
     }
     internal void DemandAvailable()
     {

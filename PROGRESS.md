@@ -13,12 +13,12 @@ This file separates **design readiness**, **source implementation**, **Windows h
 | Product scope, README and initial documentation | ✅ documented | Documentation review only | Not applicable | Not applicable |
 | Screenshot capture DLL | Implemented: WGC, bounded PNG/JPEG/ROI | Full Windows-target cross-build passed; image-policy tests passed | Pending | Not released |
 | Standalone EXE and target selection | Implemented: local selection, consent, preview, Stop | WPF cross-build passed | Pending | Not released |
-| MCP grants and image results | Implemented: two typed queries, shared Core/Wpf 1.3.1 | Adapter/contracts passed; actual bridge Windows CI pending | Pending | Not released |
+| MCP grants and image results | Implemented: two typed queries, shared Core/Wpf 1.3.1 | Adapter/contracts and actual bridge Windows CI passed (24b035e) | Pending | Not released |
 | Window / rectangle / monitor coverage | Window source only; rectangle/monitor not implemented | Source checks only | Pending | Not released |
 | Short video, indexed observation, cleanup | Not started | Not started | Not started | Not available |
 | Metadata-first video observation, frame selection, contact sheets | Basic design v0.1 documented; code not started | Documentation consistency review only | Not started | Not available |
 | Interaction-event trace and synchronization | Not started | Not started | Not started | Not available |
-| Windows packaging and published binaries | Self-contained win-x64 publish script and CI | CI pending | Pending | No release/installer |
+| Windows packaging and published binaries | Self-contained win-x64 publish script and CI | Windows CI publish passed (24b035e) | Pending | No release/installer |
 
 ## 2026-10-22 — Repository initialization
 
@@ -34,7 +34,7 @@ This file separates **design readiness**, **source implementation**, **Windows h
 - API floor Windows build 19041 / .NET 10; D3D11 hardware + WGC immutable selected-window item, no broader fallback. Consent/share start OFF. Invalidation on target/share/Stop/OS lifecycle, closed DTOs, source/ROI/image bounds, QPC/DPI/geometry/hash metadata and one admission slot are implemented.
 - Fixed public NuGet Core/Wpf **1.3.1**; reused the shared connection menu/providers, capabilities, RequestGuard and single-image transport. No package code or DLLs vendored.
 - Local evidence: .NET SDK **10.0.402 on Linux**, full solution restore/cross-build (including WPF + WGC), **0 warnings / 0 errors**; **23 contract/policy/adapter test cases passed**, **1 actual-bridge integration explicitly skipped** because a published Windows bridge is not executable here.
-- Windows CI is configured to build/publish the win-x64 preview and run the official MCP client against the actual bridge with synthetic pixels. Its result is recorded separately once available. No physical WGC test, real client image rendering, DPI/OS/driver acceptance or release is inferred from contract tests.
+- **Windows CI evidence:** [PR run 39762395221](https://github.com/flamoris-jp/flamoris-capture/actions/runs/39762395221), source commit `24b035e`: build/publish succeeded, **24 passed / 0 skipped**, including the official MCP client against the published bridge with synthetic pixels. The self-contained win-x64 preview artifact was uploaded. A subsequent resize-dimension correction is locally rebuilt/tested and will be verified by the updated PR checks. No physical WGC test, real client image rendering, DPI/OS/driver acceptance or release is inferred from contract tests.
 - See [ADR 0001](docs/decisions/0001-one-window-screenshot.md), [Setup](docs/SETUP.md), and the unexecuted [Windows acceptance checklist](docs/WINDOWS-ACCEPTANCE.md).
 
 ## Roadmap and gates
