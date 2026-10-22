@@ -1,6 +1,6 @@
 # Setup & development
 
-**Current slice:** one selected window, still image, reusable DLL + WPF EXE + MCP. Video/region/monitor/events are future work. See [ADR 0001](decisions/0001-one-window-screenshot.md).
+**Current slice:** 0.2.0 — one selected window, screenshots, recording/MP4, frame/contact-sheet queries and opt-in key/mouse events. Current contract: [ADR 0002](decisions/0002-simple-observation-recording.md).
 
 ## Prerequisites
 
@@ -50,53 +50,64 @@ $env:FLAMORIS_CAPTURE_TEST_BRIDGE = (Resolve-Path artifacts/windows/FLAMORIS-Cap
 dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
 ```
 
-## Local capture and sharing
+## Local controls and MCP
 
-1. Refresh windows, choose one, click **このウィンドウの撮影を許可**, and confirm the bound target's current display name. No frame is acquired before consent.
-2. Click **静止画を取得** to preview locally. Each shot stops acquisition after one frame. There is no background recorder.
-3. Check **この対象の画像をMCPで共有する** separately. Then use **MCP / AI → 接続** and choose **Read only**; this product rejects Edit connections.
-4. The shared **MCP / AI → 設定** dialog supports Manual, OpenAI tunnel-client and Hub provider settings. Auto-connect cannot bypass capture/sharing consent, which reset at restart. Provider preferences are current-user local settings, not source-controlled deployment defaults. Credentials use the shared credential handling; do not put transient capability JSON in Issues or Git.
-5. For Manual, copy the transient client connection configuration from the shared settings dialog into the MCP client. The capability is scoped to this running session and is invalid after revoke/target change/exit. For Hub, configure a reviewed catalog with `mcp.context` plus the two tools below; no Hub/server catalog is modified by this repository's build.
-6. Uncheck sharing to revoke MCP. **すべて停止・許可解除** also clears the target and local preview. Lock, suspend/disconnect, target destruction and shutdown stop the session; unlocking never resumes consent automatically.
+Follow the [README usage](../README.md#usage). Target selection is local; **画面共有** is the sole screen-acquisition checkbox and **操作記録** is independent. The first enabled capability presents the common safety notice. If suppression is not selected, the notice appears on the first enable in each new app run. Settings can restore the notice even during that run.
 
-No window enumeration or target changes are exposed to AI. Window titles appear only in the local picker/confirmation. Broader monitor or rectangle capture is not available.
+All acquisition starts OFF, including when provider preferences remain saved. MCP only accepts Read only. Connect after enabling the intended capabilities; capability/target changes can revoke an old connection and require reconnection. Operation-only mode allows session/summary/event queries, while image tools reject access without screen sharing.
 
-First-time Hub registration and the optional human-run SSH helper: [HUB-CONNECTION.md](HUB-CONNECTION.md).
+| Local tool | Input inside `input` | Result |
+|---|---|---|
+| `capture.session.get` | `{}` | Target/session permission metadata and limits |
+| `capture.screenshot.get` | `{}`; optional `roi`, `maxEdge`, `format`, `requireExactSize` | One fresh PNG/JPEG image and metadata |
+| `capture.recording.get` | `{}` | Current recording state, frame/event counts, bytes, stop reason |
+| `capture.frame.get` | `{}`, `frameIndex` OR `timeMs` | Latest or selected recorded frame, one image |
+| `capture.contactSheet.get` | optional `count` (1–9, default 6) | One image with cell bounds, frame indices and timestamps |
+| `capture.events.get` | optional `afterSequence` (default 0), `limit` (1–500, default 100) | Bounded event page and dropped-event count |
 
-## MCP tools
+No tool starts recording, changes the target, simulates input or accepts arbitrary file paths. Use the human UI to start/stop/save. All tools accept an optional nonempty `sessionId` for older clients; an explicitly supplied stale ID is refused. Core `guard` is still supported. **The normal client does not need either an ID lookup or an ID argument.**
 
-Use `mcp.context` first. Its `documentToken` is the Capture `sessionId`; its `runtimeId` and `documentToken` can also be supplied as the Core `guard`. Example Core wire arguments:
-
-```json
-{"input":{"sessionId":"<documentToken>"}}
-```
-
-Use this with `capture.session.get` to retrieve metadata, consent state, supported queries and effective limits. It contains no image or window list.
+Screenshot:
 
 ```json
-{
-  "input": {
-    "sessionId": "<documentToken>",
-    "format": "png",
-    "maxEdge": 1280,
-    "roi": {"x":0,"y":0,"width":640,"height":480},
-    "requireExactSize": false
-  },
-  "guard": {"runtimeId":"<runtimeId>","documentToken":"<documentToken>"}
-}
+{"input":{}}
 ```
 
-Use this with `capture.screenshot.get`. ROI is optional and expressed in source physical pixels; omit it for the whole selected window. Requests reject unknown/duplicate properties, missing required fields, invalid bounds and oversized dimensions. `format` defaults to `jpeg`, maxEdge to 1280. Hard output edge is 1920; encoded bytes <=1 MiB. `requireExactSize` prevents additional byte-budget downscaling after the initial maxEdge resize; it does not upsize. Response includes exactly one standard PNG/JPEG MCP image and metadata (`sha256`, dimensions, ROI/scales, actual quality, source geometry/DPI, QPC ticks, UTC and permission epoch). Bytes are not duplicated in structured metadata.
+A recorded moment (milliseconds from recording start):
 
-Tool names may acquire an external namespace when routed through a Hub. The tools own no file/network/process/shell authority. Video tools in BASIC-DESIGN remain unimplemented.
+```json
+{"input":{"timeMs":1200}}
+```
+
+Contact sheet and events:
+
+```json
+{"input":{"count":6}}
+```
+
+```json
+{"input":{"afterSequence":0,"limit":100}}
+```
+
+`frameIndex` is the acquired JPEG-frame index, zero-based; `timeMs` selects the last acquired frame at or before the requested time. Before-first/after-last/out-of-range selectors fail. Omit both for latest. This is not an imported MP4's decoder index. MP4 output is encoded from these frames, with the first acquired frame at MP4 time zero. The JSON records that first frame's offset from the shared event/recording origin; do not infer MP4 time from nominal FPS.
+
+Screenshots remain at most 1 MiB / max edge 1920 (default 1280 JPEG); ROI uses physical source pixels. Recorded frames are max edge 1280 and at most 1 MiB each. Contact sheets are at most 1200×900 / 1 MiB. Unknown/duplicate/null properties and invalid selectors are rejected. Recording stalls may leave timestamp gaps; use the actual times. A changed output size stops recording with `geometry_changed`.
+
+For Windows platform encoder/contact-sheet smoke tests (synthetic frames, no desktop capture):
+
+```powershell
+dotnet test tests/Flamoris.Capture.Windows.Tests -c Release --no-build
+```
+
+First-time Hub registration and upgrading an existing 3-tool catalog to 7 tools: [HUB-CONNECTION.md](HUB-CONNECTION.md). Hub tool names acquire the existing namespace (`capture.capture.frame.get`, for example).
 
 ## Embed the DLL
 
-Reference `Flamoris.Capture.Core` and `Flamoris.Capture.Windows` from a Windows .NET 10 host. On the host's local target-selection UI, obtain a `WindowChoice` from `WindowTarget.List`, create a `WindowTarget.Select(choice)`, confirm its `DisplayName` and call `CaptureSession.SelectAndAllow(target)`. Construct the session with `new WindowCaptureBackend()`.
+Reference `Flamoris.Capture.Core` and `Flamoris.Capture.Windows` from a Windows .NET 10 host. On the host's local target-selection UI, obtain a `WindowChoice` from `WindowTarget.List`, create a `WindowTarget.Select(choice)`, show its `DisplayName` and call `CaptureSession.SelectAndAllow(target)`. Construct the session with `new WindowCaptureBackend()`.
 
-Use `session.Info.SessionId` in `ScreenshotRequest`, then await `session.CaptureAsync(request, disclosure: false, cancellationToken)`. The result owns encoded bytes and metadata; it does not save a file. The embedding host owns consent UI, preview removal, idle `CheckTarget`, lock/disconnect/suspend handling and disposal, as demonstrated by the EXE. The capture DLL itself neither opens MCP nor owns a second user consent authority.
+After human screen consent, call `session.SetSharing(true)`; then await `session.CaptureAsync(request, disclosure: false, cancellationToken)`. The result owns encoded bytes and metadata; it does not save a file. The embedding host owns consent UI, preview removal, idle `CheckTarget`, lock/disconnect/suspend handling and disposal, as demonstrated by the EXE. The capture DLL itself neither opens MCP nor owns a second user consent authority.
 
-For MCP, reference `Flamoris.Capture.Mcp` and adapt the same session with `CaptureMcpHost`. Do not instantiate a second session/target for AI requests. Core authorization is in addition to `session.SetSharing(true)`, not a replacement.
+For MCP, reference `Flamoris.Capture.Mcp` and adapt the same session with `CaptureMcpHost`. Do not instantiate a second session/target for AI requests. Core authorization is in addition to product consent. Pass `ContactSheetRenderer` to `CaptureMcpHost` for sheet rendering. `session.Observation` owns the bounded recording and event timeline; `VideoExporter` saves a stopped recording locally.
 
 ## Troubleshooting
 

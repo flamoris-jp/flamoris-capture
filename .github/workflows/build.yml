@@ -30,6 +30,8 @@ jobs:
         run: |
           $env:FLAMORIS_CAPTURE_TEST_BRIDGE = (Resolve-Path artifacts/windows/FLAMORIS-Capture-win-x64/Flamoris.Capture.Bridge.exe).Path
           dotnet test tests/Flamoris.Capture.Tests -c Release --no-build --logger trx --results-directory TestResults
+      - name: Test platform MP4 encoder and contact sheet with synthetic frames
+        run: dotnet test tests/Flamoris.Capture.Windows.Tests -c Release --no-build --logger trx --results-directory TestResults
       - uses: actions/upload-artifact@v4
         with:
           name: flamoris-capture-win-x64-preview

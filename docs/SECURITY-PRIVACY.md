@@ -1,61 +1,16 @@
-# Privacy & Security / プライバシーと安全設計
+# Privacy and consent
 
-**Status:** mandatory product requirements. The one-window screenshot source implements separate consent, lifecycle invalidation and bounded results as detailed in [ADR 0001](decisions/0001-one-window-screenshot.md). Real Windows acceptance is pending. Video retention/event requirements below remain future design. Updated 2026-10-22.
+Current 0.2.0 source requirements and limits: [ADR 0002](decisions/0002-simple-observation-recording.md). Physical acceptance remains pending.
 
-Screen capture is sensitive: a harmless-looking screenshot can include names, chat, notifications, passwords, documents and other applications. Video and interaction traces increase the sensitivity. FLAMORIS Capture should **fail closed** and make capture and disclosure visible to the user.
+- A human selects one immutable window locally. Screen and operation acquisition start OFF on every launch. There is no hidden auto-resume, other-window/desktop fallback, remote target selector, remote recording command or input injection.
+- **画面共有** gates live pixels and recording. OFF revokes the old MCP scope synchronously, cancels in-flight acquisition and clears the live preview. Old recorded assets cannot become MCP-readable just by turning sharing ON again.
+- **操作記録** independently enables physical key/mouse recording for the selected foreground root only. OFF unregisters Raw Input and stops new events. Target loss/replacement, all-target Stop, OS lock/disconnect/suspend and shutdown stop both. Yellow/red UI badges reflect actual operation/recording state.
+- The first enable presents the approved warning before acquisition. Suppression is initially unchecked and can be reversed in settings. The notice does not replace target/permission checks.
+- Physical keys can reveal sensitive typed content even when Unicode text is not stored. Known UI Automation password/editable/text controls suppress keyboard events, but custom controls may not expose them. Do not claim universal password detection. Users must avoid displaying/entering secrets while sharing/recording.
+- Captured images inherently include whatever is displayed inside the approved window. No screen OCR, clipboard reading, Unicode/IME translation, background-window trace or text extraction is provided. Local target titles and native handles are not MCP selectors or diagnostics.
+- MCP Core/Wpf 1.3.1 remains responsible for same-user grants, transport, guards and connection UI. Read-only attachment does not imply consent to screen/event acquisition. Operation-only attachment refuses image tools. Revocation is checked at image delivery, including after contact-sheet rendering and recording replacement.
+- Screenshots/frames/sheets stay within 1 MiB per response and one-image transport. Video is not sent through MCP. Acquisition dimensions, requests, frame bytes/duration/count, event queue and event pages are bounded; see ADR 0002 for exact scope of each limit. There is no claim of a measured process-wide RSS/GPU quota.
+- Temporary JPEGs are local and cleaned on ordinary replacement/exit. Crashes may leave files in the user's temporary `FLAMORIS-Capture` directory. TTL/crash recovery is deferred. Explicitly saved MP4/JSON is retained under the human's control; no cloud upload or secure erasure is claimed.
+- Logs/Issues/CI must contain synthetic media or coarse counters/error codes, never private screen captures, key events, window titles, file paths, tokens or credentials. Saved operation JSON is user data and must not be committed.
 
-## Consent model
-
-**Separate capabilities:**
-
-1. **Local capture consent**: the user selects `window`, `region`, or `monitor`, reviews its scope and explicitly begins a bounded capture session.
-2. **External/MCP disclosure consent**: user separately enables a grant permitting an authorized client to receive the captured pixels/assets. Local saving/preview should not silently permit remote retrieval.
-3. **Optional interaction-event consent**: user explicitly enables event recording; capturing screen pixels alone does not authorize a keyboard or mouse event stream.
-
-All OFF by default, including at restart. A visible status indicator (and recording-specific indicator) must remain apparent; one immediate user-facing Stop/Revoke action must terminate or invalidate active work. A local interactive user should always be able to deny/revoke without the AI's permission.
-
-The local user must choose target using a host-controlled UI. External MCP must not silently change to another window, select a new monitor or expand the crop to the entire desktop.
-
-## Least privilege
-
-- Bind target to more than a reusable raw window handle; verify process/window lifetime and capture-session token on request and result delivery.
-- Prefer same-user local-only connection and an explicit short-lived capability. Reuse FLAMORIS MCP Core instead of rolling a new authentication scheme.
-- Revalidate during long operations, not just at start; suppress output on revoke, target swap, timeout or session expiration.
-- Cap resolution, ROI, recording duration, FPS, total bytes, temporary storage, simultaneous sessions and pending requests. Apply limits before allocating buffers or starting encoders.
-- No arbitrary path/URL/network/file-browser/shell/input-injection MCP tools in the core capture surface.
-- Fail with explicit `denied`, `unsupported`, `target_lost`, `busy`, `stale_session` or `resource_limit` categories (names to be finalized) rather than falling back to broader capture.
-
-## Window / rectangle / monitor difference
-
-`window` captures one user-selected application target (actual ability to include menus/dialogs is backend-dependent). `region` can capture any pixels visibly intersecting the rectangle, including other programs. `monitor` may include *everything* on one display and must present a stronger scope warning.
-
-The capture selection boundary is not equivalent to the document boundary. A screenshot of a browser can include private tabs or notifications not represented in an app's internal model. Explicitly state the potential difference in the GUI.
-
-Do not try to bypass Windows protected surfaces, UAC secure desktop, DRM, session lock, or operating-system privacy protections. Minimized/occluded/hidden results must be represented accurately, not fabricated.
-
-## Interaction tracing: data minimization
-
-Do **not** create a keylogger. Default event schema should retain target-local pointer actions, wheel deltas, approved *semantic shortcuts* (e.g. Undo) and geometry/focus changes only when necessary. Never record password entry, IME text, clipboard contents, raw typed characters, screen text from hidden/other windows or all-system keyboard hooks by default.
-
-Treat each event record as potentially sensitive. Hide/mask events from protected fields and allow an explicit stop of event recording without terminating an already authorized screenshot session. A future policy for selectively capturing typed text would require separate design/review and is **not** part of this plan.
-
-## Assets, retention, logs
-
-The [basic design](BASIC-DESIGN.md) distinguishes normal recording stop from revocation. Normal stop finalizes an asset for already authorized observation until TTL; it does not silently widen sharing. Revoke invalidates grants/IDs and in-flight disclosure, including cached frames, contact sheets, diffs, event pages and metadata. A separate local capture grant may remain active when only MCP sharing is revoked. Target loss/replacement and OS lock invalidate the observation workspace; recovered local recordings require human review and a new grant before sharing.
-
-All derived images and event metadata inherit the parent recording's scope and maximum lifetime. Validate authorization before decoding and again immediately before delivery. Cached pixels must not bypass revoke/expiry. Returned pixels already received by a client cannot be recalled.
-
-- Release acquisition buffers on normal stop and preserve only the bounded finalized recording until TTL. Clean up cancelled/failed recordings and expired temporary files; revoke clears MCP derivatives/handles while deliberately retained local recordings stay under the human's control.
-- Persist only when the human deliberately selects an output destination; no automatic cloud upload or hidden long-term store.
-- Initial MCP observation returns selected images, not video chunks. If future raw-video export is added, verify length, offset and SHA-256 under a separately reviewed bounded transfer contract.
-- Diagnostics may include counters, error codes and coarse performance timings, but **not** raw images, window titles, typed content, secret paths, tokens or video.
-- CI and Issues must not publish private user captures. Use synthetic windows/test patterns where possible.
-- Encrypt/sign only when appropriate and documented; do not market ephemeral local capture as securely encrypted end-to-end unless actually verified.
-
-## Review gates
-
-Before calling any MVP feature ready, demonstrate refusal after revoke, target reuse and replacement rejection, cross-user/unauthorized-client refusal, safe stop under capture load, OS-protected content behavior, and no data leaking to logs or unintended output channels.
-
-Read [Test plan](TEST-PLAN.md) for acceptance. This document is a design constraint, **not evidence that a secure implementation already exists**.
-
-
+The larger retention/import/comparison design in BASIC-DESIGN.md is a roadmap. Unimplemented protections must not be represented as already verified. Use [Windows acceptance](WINDOWS-ACCEPTANCE.md) for target filtering, custom controls, stop/revoke and physical driver behavior.

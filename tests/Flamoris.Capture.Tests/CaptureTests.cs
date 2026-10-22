@@ -21,13 +21,14 @@ public sealed class CaptureTests
         public static readonly byte[] Png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9xkAAAAASUVORK5CYII=");
         public Func<CancellationToken, Task>? Wait { get; set; }
         public int Calls;
+        public bool LiveClock { get; set; }
         public byte[] Bytes { get; set; } = Png;
         public async Task<EncodedScreenshot> CaptureAsync(ICaptureTarget target, ScreenshotRequest request, CancellationToken token)
         {
             Interlocked.Increment(ref Calls);
             if (Wait is not null) await Wait(token);
             return new(Bytes, "image/png", 1, 1, new(0, 0, 1, 1), null,
-                new(1, 1, -1920, 0, 144, "test-geometry"), 1234, DateTimeOffset.UnixEpoch);
+                new(1, 1, -1920, 0, 144, "test-geometry"), LiveClock ? ObservationClock.Ticks : 1234, DateTimeOffset.UnixEpoch);
         }
     }
     private static McpBoundary Boundary(CaptureSession session)
@@ -37,13 +38,15 @@ public sealed class CaptureTests
     }
     private static ScreenshotRequest Request(CaptureSession s) => new() { SessionId = s.Info.SessionId };
     private static JsonElement Input(CaptureSession s) => JsonSerializer.SerializeToElement(new { sessionId = s.Info.SessionId });
-    [Fact] public async Task StartsOffAndLocalConsentDoesNotGrantDisclosure()
+    [Fact] public async Task StartsOffAndScreenCheckboxGatesBothLocalAndMcp()
     {
         var backend = new Backend(); using var s = new CaptureSession(backend);
         Assert.False(s.Info.CaptureAllowed); Assert.False(s.Info.SharingAllowed);
         s.SelectAndAllow(new Target());
         Assert.Equal("forbidden", (await Assert.ThrowsAsync<CaptureFault>(() => s.CaptureAsync(Request(s), true))).Code);
         Assert.Equal(0, backend.Calls);
+        Assert.Equal("forbidden", (await Assert.ThrowsAsync<CaptureFault>(() => s.CaptureAsync(Request(s), false))).Code);
+        s.SetSharing(true);
         var local = await s.CaptureAsync(Request(s), false);
         Assert.Equal(-1920, local.Metadata.Geometry.DesktopOriginX); Assert.Equal((uint)144, local.Metadata.Geometry.Dpi);
         Assert.Equal(1234, local.Metadata.SystemRelativeTimeTicks); Assert.Null(local.Metadata.SyncErrorBoundMs);
@@ -59,7 +62,7 @@ public sealed class CaptureTests
         Assert.Equal(s.Info.TargetId, json.GetProperty("targetId").GetString());
         Assert.DoesNotContain(Convert.ToBase64String(Backend.Png), json.GetRawText());
         Assert.DoesNotContain("title", json.GetRawText(), StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(2, b.Tools.Count);
+        Assert.Equal(6, b.Tools.Count);
         var metadata = await b.InvokeAsync(g, "capture.session.get", Input(s), null);
         Assert.False(metadata.IsError); Assert.Null(metadata.Image);
     }
@@ -100,7 +103,6 @@ public sealed class CaptureTests
     [InlineData("{\"sessionId\":null}")]
     [InlineData("{\"sessionId\":\"x\",\"maxEdge\":1921}")]
     [InlineData("{\"sessionId\":\"x\",\"roi\":{\"width\":2,\"height\":2}}")]
-    [InlineData("{}") ]
     public async Task MalformedClosedDtosAreRejectedBeforeAcquisition(string json)
     {
         var backend = new Backend(); using var s = new CaptureSession(backend); s.SelectAndAllow(new Target()); s.SetSharing(true);
@@ -132,14 +134,14 @@ public sealed class CaptureTests
     [Fact] public async Task CallerCancellationPropagatesAndReleasesAdmission()
     {
         var backend = new Backend { Wait = t => Task.Delay(Timeout.Infinite, t) };
-        using var s = new CaptureSession(backend); s.SelectAndAllow(new Target()); using var ct = new CancellationTokenSource();
+        using var s = new CaptureSession(backend); s.SelectAndAllow(new Target()); s.SetSharing(true); using var ct = new CancellationTokenSource();
         var task = s.CaptureAsync(Request(s), false, ct.Token); ct.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task); Assert.False(s.Info.Busy);
     }
     [Theory] [InlineData(0)] [InlineData(1_048_577)]
     public async Task EncodedPayloadBudgetIsEnforced(int length)
     {
-        using var s = new CaptureSession(new Backend { Bytes = new byte[length] }); s.SelectAndAllow(new Target());
+        using var s = new CaptureSession(new Backend { Bytes = new byte[length] }); s.SelectAndAllow(new Target()); s.SetSharing(true);
         Assert.Equal("resource_limit", (await Assert.ThrowsAsync<CaptureFault>(() => s.CaptureAsync(Request(s), false))).Code);
         Assert.False(s.Info.Busy);
     }

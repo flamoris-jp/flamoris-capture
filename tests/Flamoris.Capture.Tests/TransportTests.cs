@@ -36,7 +36,7 @@ public sealed class TransportTests
             var context = await client.CallToolAsync("mcp.context", cancellationToken: ct.Token);
             string sessionId = context.StructuredContent!.Value.GetProperty("documentToken").GetString()!;
             var reply = await client.CallToolAsync("capture.screenshot.get", new Dictionary<string,object?> {
-                ["input"] = new { sessionId } }, cancellationToken: ct.Token);
+                ["input"] = new { } }, cancellationToken: ct.Token);
             Assert.False(reply.IsError == true);
             var image = Assert.Single(reply.Content.OfType<ImageContentBlock>());
             Assert.Equal(CaptureTests.Backend.Png, image.DecodedData.ToArray());

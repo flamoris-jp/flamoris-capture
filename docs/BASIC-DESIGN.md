@@ -1,5 +1,7 @@
 # FLAMORIS Capture 基本設計 v0.1
 
+> Current implementation (0.2.0): [ADR 0002](decisions/0002-simple-observation-recording.md), [README](../README.md) and [Setup](SETUP.md). The text below is the earlier broader design/acceptance roadmap; its proposed IDs, tool names, retention numbers and unimplemented labels do not define the current wire contract. Screenshots, bounded recording, selected frames/contact sheets and opt-in physical key/mouse traces now have source implementations. Physical Windows acceptance remains separate.
+
 **更新:** 2026-10-22 / **状態:** 動画観測の設計ベースライン。単一ウィンドウ静止画は[ADR 0001](decisions/0001-one-window-screenshot.md)に従う初期ソース実装あり。実Windows受け入れ・リリースとは別。動画API・数値は設計提案。
 
 ## 1. 目的と成功条件

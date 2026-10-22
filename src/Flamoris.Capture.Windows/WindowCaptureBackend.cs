@@ -100,7 +100,7 @@ public sealed class WindowCaptureBackend : ICaptureBackend
         catch (UnauthorizedAccessException) { throw new CaptureFault("forbidden"); }
         catch (COMException) { throw new CaptureFault("frame_unavailable"); }
     }
-    private static async Task<byte[]?> Encode(byte[] pixels, int width, int height, string format, int? quality, CancellationToken token)
+    internal static async Task<byte[]?> Encode(byte[] pixels, int width, int height, string format, int? quality, CancellationToken token)
     {
         using var stream = new InMemoryRandomAccessStream();
         var options = new BitmapPropertySet();

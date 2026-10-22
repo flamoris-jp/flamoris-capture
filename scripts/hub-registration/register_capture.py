@@ -19,7 +19,7 @@ import uuid
 
 NAME = 'flamoris-mcp-hub'
 TOKEN_KEY = 'CAPTURE_CONNECTOR_TOKEN'
-TOOLS = {'mcp.context', 'capture.session.get', 'capture.screenshot.get'}
+TOOLS = {'mcp.context', 'capture.session.get', 'capture.screenshot.get', 'capture.recording.get', 'capture.frame.get', 'capture.contactSheet.get', 'capture.events.get'}
 
 class Failure(Exception):
     pass
@@ -83,7 +83,7 @@ def validate_catalog(catalog):
         or catalog.get('transport') != 'reverse-websocket' or catalog.get('product_id') != 'flamoris.capture'
         or catalog.get('connector_token_env') != TOKEN_KEY
         or {x['name'] for x in catalog.get('tools', [])} != TOOLS
-        or len(catalog['tools']) != 3):
+        or len(catalog['tools']) != len(TOOLS)):
         raise Failure('catalog_contract_mismatch')
 
 def rpc_status(url, token):
@@ -138,7 +138,7 @@ def install(args):
     before = rpc_status(url, client_token)
     if target.is_symlink(): raise Failure('catalog_symlink')
     if target.exists() or re.search(r'^\s*(?:export\s+)?' + TOKEN_KEY + r'\s*=', env_text, re.M):
-        if target.exists() and json.loads(read_regular(target)[0]) == catalog and 'capture' in before and before['capture']==3 and env.get(TOKEN_KEY):
+        if target.exists() and json.loads(read_regular(target)[0]) == catalog and 'capture' in before and before['capture']==len(TOOLS) and env.get(TOKEN_KEY):
             return {'status':'already_registered','upstreams':before,'credential_changed':False}
         raise Failure('existing_capture_requires_review')
     if 'capture' in before: raise Failure('capture_namespace_exists')
@@ -159,7 +159,7 @@ def install(args):
         docker('POST', '/containers/' + NAME + '/rename?name=' + previous); renamed = True
         docker('POST', '/containers/create?name=' + NAME, spec); created = True
         docker('POST', '/containers/' + NAME + '/start')
-        expected = {**before, 'capture':3}
+        expected = {**before, 'capture':len(TOOLS)}
         for _ in range(30):
             try:
                 if rpc_status(url, client_token) == expected: break
@@ -182,12 +182,55 @@ def install(args):
     return {'status':'registered','upstreams':expected,'credential_changed':True,'image_preserved':True,
             'capture_connected':False,'note':'Desktop connection is the next explicit human step.'}
 
+def update_catalog(args):
+    """Update an already registered Capture catalog without creating/rotating credentials."""
+    if os.geteuid() != 0: raise Failure('run_with_sudo')
+    root = Path(args.root).resolve(); target = root/'mcps/capture.yaml'
+    raw, _ = read_regular(Path(args.catalog)); catalog = json.loads(raw); validate_catalog(catalog)
+    old, stat = read_regular(target); previous = json.loads(old)
+    legacy = {'mcp.context', 'capture.session.get', 'capture.screenshot.get'}
+    for key in ('id', 'namespace', 'transport', 'product_id', 'connector_token_env'):
+        if previous.get(key) != catalog[key]: raise Failure('existing_capture_requires_review')
+    if {tool['name'] for tool in previous.get('tools', [])} not in (legacy, TOOLS):
+        raise Failure('existing_capture_requires_review')
+    current = docker('GET', '/containers/' + NAME + '/json')
+    if not current['State']['Running']: raise Failure('hub_not_running')
+    if not any(m['Type']=='bind' and m['Source']==str(root/'mcps') and m['Destination']=='/app/config/mcps' for m in current['Mounts']):
+        raise Failure('layout_changed')
+    env = dict(x.split('=',1) for x in current['Config']['Env'])
+    if not env.get(TOKEN_KEY) or not env.get('FLAMORIS_MCP_HUB_CLIENT_TOKEN'): raise Failure('credential_unavailable')
+    url = 'http://127.0.0.1:' + str(int(env.get('FLAMORIS_MCP_HUB_PORT','8769'))) + '/mcp'
+    before = rpc_status(url, env['FLAMORIS_MCP_HUB_CLIENT_TOKEN'])
+    expected = {**before, 'capture':len(TOOLS)}
+    if previous == catalog and before == expected: return {'status':'already_updated','credential_changed':False}
+    backup = root/'config'/('capture-catalog-backup-' + uuid.uuid4().hex + '.json')
+    atomic(backup, old, 0o600, 0, 0)
+    try:
+        atomic(target, raw, stat.st_mode & 0o777, stat.st_uid, stat.st_gid)
+        docker('POST', '/containers/' + NAME + '/restart?t=15')
+        for _ in range(30):
+            try:
+                if rpc_status(url, env['FLAMORIS_MCP_HUB_CLIENT_TOKEN']) == expected: break
+            except Exception: pass
+            time.sleep(1)
+        else: raise Failure('health_verification_failed')
+        after = docker('GET', '/containers/' + NAME + '/json')
+        if after['Id'] != current['Id'] or after['Image'] != current['Image'] or after['Config'] != current['Config']:
+            raise Failure('runtime_changed')
+    except BaseException:
+        atomic(target, old, stat.st_mode & 0o777, stat.st_uid, stat.st_gid)
+        docker('POST', '/containers/' + NAME + '/restart?t=15')
+        raise Failure('catalog_update_failed_original_restored')
+    return {'status':'catalog_updated','upstreams':expected,'credential_changed':False,'container_preserved':True}
+
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument('--root', required=True); p.add_argument('--catalog', required=True); p.add_argument('--token-file', required=True)
+    p.add_argument('--root', required=True); p.add_argument('--catalog', required=True); p.add_argument('--token-file')
+    p.add_argument('--update-catalog', action='store_true')
     args = p.parse_args()
     try:
-        result = install(args)
+        if not args.update_catalog and not args.token_file: raise Failure('token_file_required_for_initial_registration')
+        result = update_catalog(args) if args.update_catalog else install(args)
         print(json.dumps(result)); return 3 if result['status']=='already_registered' else 0
     except Exception as error:
         code = str(error) if isinstance(error, Failure) else type(error).__name__

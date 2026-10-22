@@ -1,5 +1,7 @@
 # Verification & Acceptance Plan
 
+> Current implementation (0.2.0): [ADR 0002](decisions/0002-simple-observation-recording.md), [README](../README.md) and [Setup](SETUP.md). The text below is the earlier broader design/acceptance roadmap; its proposed IDs, tool names, retention numbers and unimplemented labels do not define the current wire contract. Screenshots, bounded recording, selected frames/contact sheets and opt-in physical key/mouse traces now have source implementations. Physical Windows acceptance remains separate.
+
 **Status:** executable pure contract/session/image-policy/adapter tests and an optional official-client bridge integration now exist in `tests/Flamoris.Capture.Tests`. Windows CI enables the latter using synthetic pixels. Physical WGC/display acceptance has not been executed; use [WINDOWS-ACCEPTANCE](WINDOWS-ACCEPTANCE.md). CI/contract results are recorded separately in [PROGRESS](../PROGRESS.md). Future video/region/trace cases remain plans.
 
 ## Test layers

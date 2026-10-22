@@ -1,5 +1,7 @@
 # Architecture / 設計境界
 
+> Current implementation (0.2.0): [ADR 0002](decisions/0002-simple-observation-recording.md), [README](../README.md) and [Setup](SETUP.md). The text below is the earlier broader design/acceptance roadmap; its proposed IDs, tool names, retention numbers and unimplemented labels do not define the current wire contract. Screenshots, bounded recording, selected frames/contact sheets and opt-in physical key/mouse traces now have source implementations. Physical Windows acceptance remains separate.
+
 **Status:** one-window screenshot source implemented; broader modes/video/events below remain proposed. Updated 2026-10-22. Actual source ownership, fixed packages, limits and caveats: [ADR 0001](decisions/0001-one-window-screenshot.md). Physical Windows acceptance and release remain pending.
 
 ## Product contract

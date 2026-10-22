@@ -1,6 +1,6 @@
-# Connecting the screenshot preview to MCP Hub
+# Connecting Capture to MCP Hub
 
-Capture remains the authority for target selection, consent and pixels. The Hub only pins and forwards the existing three-tool wire catalog; it does not start capture or select a target.
+Capture remains the authority for target selection, consent and pixels. The Hub only pins and forwards the seven-tool wire catalog; it does not start capture or select a target.
 
 ## Catalog
 
@@ -15,8 +15,12 @@ The existing local tool contract includes `capture.` in its name. Hub namespacin
 | `capture.mcp.context` | `mcp.context` |
 | `capture.capture.session.get` | `capture.session.get` |
 | `capture.capture.screenshot.get` | `capture.screenshot.get` |
+| `capture.capture.recording.get` | `capture.recording.get` |
+| `capture.capture.frame.get` | `capture.frame.get` |
+| `capture.capture.contactSheet.get` | `capture.contactSheet.get` |
+| `capture.capture.events.get` | `capture.events.get` |
 
-The repeated namespace is intentional compatibility with the already running 0.1.0 preview. It is not an extra capture authority or an implemented video tool.
+The repeated namespace is intentional compatibility with the already running 0.1.0 preview. It is not an extra capture authority.
 
 ## Explicit deployment helper
 
@@ -36,7 +40,7 @@ The host helper:
 2. Backs up runtime.env and the container's complete inspected configuration to a root-only directory under the Hub's config folder.
 3. Adds only `capture.yaml` and one dedicated environment key. Existing catalogs, image, command, labels, user, mounts, resource/security settings and other credentials are preserved.
 4. Recreates only the Hub container from its full inspected Config/HostConfig. Docker `--env-file` values are fixed at container creation, so a simple restart would not load a newly added secret. The supported helper path currently verifies **host networking**, matching the selected recorded deployment; it refuses an unverified network layout.
-5. Verifies the same image and exactly the previous upstream tool counts plus Capture's three tools. On failure it restores files and the original Docker container. On success it removes the stopped old container; root-only configuration backups remain.
+5. Verifies the same image and exactly the previous upstream tool counts plus Capture's seven tools. On failure it restores files and the original Docker container. On success it removes the stopped old container; root-only configuration backups remain.
 
 Do not run an Updater change concurrently with this explicit configuration operation. Updater remains the installation/image owner; its stable container name and runtime.env location are retained. Existing desktop sockets disconnect during Hub recreation and need reconnecting. No other service/container is restarted. Running the helper again does not silently rotate an existing Capture credential.
 
@@ -60,15 +64,26 @@ After a successful reload, retry **MCP / AI → 接続** in Capture. Do not reru
 
 Capture currently accepts only Read only. The shared connection dialog also offers Edit for other products; selecting Edit in Capture is rejected locally **before any Hub connection**. Set Read only in settings and again in the connection confirmation. An existing credential entry does not override the selected permission. Updated Capture previews explain this explicitly.
 
-Changing the sharing checkbox invalidates the old MCP grant/session, but the approved local preview stays visible. Selecting another target, stopping, target loss or OS lock clears it.
+Changing the sharing checkbox invalidates the old MCP grant/session, and live acquisition/recording stops immediately; the live preview is cleared. Operation recording retains its independent consent. Selecting another target, stopping, target loss or OS lock clears it.
 
 ## Human desktop steps after registration
 
 1. In Capture, open **MCP / AI → 設定…**.
 2. Choose **FLAMORIS MCP Hub**, **読み取り専用**, and the WSS endpoint printed by the launcher.
 3. Paste the clipboard credential into the password field and Save. The shared subsystem stores it in the current user's Windows Credential Manager. Do not paste it into chat/Issues/screenshots.
-4. Select/allow the desired window, check **この対象の画像をMCPで共有する**, then **MCP / AI → 接続… → 読み取り専用 → 接続**.
-5. Confirm the green connection indicator. Refresh ChatGPT's Hub tool catalog if needed; call `capture.mcp.context` first and use `documentToken` as the screenshot `input.sessionId`.
+4. Select/allow the desired window, enable **画面共有** (or **操作記録** for event-only observation), then **MCP / AI → 接続… → 読み取り専用 → 接続**.
+5. Confirm the green connection indicator. Refresh ChatGPT's Hub tool catalog if needed; call `capture.capture.screenshot.get` with `{"input":{}}`. No session ID lookup is needed.
 6. Confirm a real MCP image is displayed, then test sharing revoke and old-session refusal. Registration/green connection alone does not prove physical-image disclosure or revoke acceptance.
 
-Capture does not resume sharing after restart, target replacement or OS lock. Registration does not change that consent policy. No recorder, global input trace or monitor/rectangle target is added.
+Capture does not resume sharing after restart, target replacement or OS lock. Registration does not change that consent policy. Recording and opt-in target-filtered input events are available; monitor/rectangle targets remain unavailable.
+
+## Upgrade an already registered 0.1 catalog
+
+The 0.2 app alone cannot update a statically pinned Hub catalog. From an updated checkout **on the Hub host**, use the actual managed installation root:
+
+```bash
+sudo python3 scripts/hub-registration/register_capture.py --update-catalog \
+  --root /actual/managed/hub/root --catalog config/hub-capture.example.json
+```
+
+This path accepts the recognized old/new Capture catalog identity, preserves the existing connector credential, runtime.env, container ID/image/settings and all other catalogs, saves a private catalog backup, and restarts only the existing Hub container to reload tools. It checks authenticated upstream counts and restores the old catalog/restarts on failure. It never recreates the container or rotates a token. Active desktop clients need reconnecting; refresh the ChatGPT plugin's tool catalog after Hub restart. Do not rerun the first-time credential launcher for this upgrade. This helper has mocked tests; it is not executed on a production host by CI.

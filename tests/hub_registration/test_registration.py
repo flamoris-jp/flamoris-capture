@@ -54,7 +54,7 @@ class RegistrationTests(unittest.TestCase):
         with self.assertRaises(m.Failure): m.validate_catalog(value)
     def test_success_preserves_existing_files_and_updates_only_capture(self):
         existing=self.root/'mcps/cutwork.yaml'; existing.write_text('untouched')
-        before={'cutwork':9,'generation':25}; after={**before,'capture':3}
+        before={'cutwork':9,'generation':25}; after={**before,'capture':len(m.TOOLS)}
         with patch.object(m.os,'geteuid',return_value=0), patch.object(m,'docker',side_effect=self.docker), patch.object(m,'rpc_status',side_effect=[before,after]), patch.object(m.os,'fchown'):
             result=m.install(self.args)
         self.assertEqual('registered',result['status']); self.assertEqual('untouched',existing.read_text())
@@ -80,7 +80,7 @@ class RegistrationTests(unittest.TestCase):
         (self.root/'mcps/capture.yaml').write_bytes(self.catalog.read_bytes())
         self.env.write_text('ORIGINAL=keep\nCAPTURE_CONNECTOR_TOKEN='+'a'*54+'\n')
         self.current['Config']['Env'].append(m.TOKEN_KEY+'='+'a'*54)
-        with patch.object(m.os,'geteuid',return_value=0), patch.object(m,'docker',side_effect=self.docker), patch.object(m,'rpc_status',return_value={'capture':3}):
+        with patch.object(m.os,'geteuid',return_value=0), patch.object(m,'docker',side_effect=self.docker), patch.object(m,'rpc_status',return_value={'capture':len(m.TOOLS)}):
             result=m.install(self.args)
         self.assertEqual('already_registered',result['status'])
         self.assertTrue(all(method=='GET' for method,_,_ in self.calls))
@@ -88,6 +88,35 @@ class RegistrationTests(unittest.TestCase):
         self.token.chmod(0o644)
         with patch.object(m.os,'geteuid',return_value=0), patch.object(m,'docker') as docker:
             with self.assertRaisesRegex(m.Failure,'credential_file_permissions'): m.install(self.args)
+            docker.assert_not_called()
+
+class CatalogUpdateTests(unittest.TestCase):
+    setUp = RegistrationTests.setUp
+    docker = RegistrationTests.docker
+    def prepare(self):
+        value=json.loads(self.catalog.read_text()); value['tools']=value['tools'][:3]
+        target=self.root/'mcps/capture.yaml'; target.write_text(json.dumps(value))
+        self.current['Config']['Env'].append(m.TOKEN_KEY+'='+'a'*54)
+        return target
+    def test_upgrade_preserves_credentials_env_and_container(self):
+        target=self.prepare(); env=self.env.read_bytes(); original=copy.deepcopy(self.current)
+        with patch.object(m.os,'geteuid',return_value=0), patch.object(m,'docker',side_effect=self.docker), patch.object(m,'rpc_status',side_effect=[{'cutwork':9,'capture':3},{'cutwork':9,'capture':7}]), patch.object(m.os,'fchown'):
+            result=m.update_catalog(self.args)
+        self.assertEqual('catalog_updated',result['status']); self.assertFalse(result['credential_changed'])
+        self.assertEqual(env,self.env.read_bytes()); self.assertEqual(original,self.current)
+        self.assertEqual(7,len(json.loads(target.read_text())['tools']))
+        self.assertEqual(1,sum('restart?' in path for _,path,_ in self.calls))
+        self.assertFalse(any('create' in path or method=='DELETE' for method,path,_ in self.calls))
+    def test_failed_catalog_health_restores_previous_catalog(self):
+        target=self.prepare(); old=target.read_bytes()
+        with patch.object(m.os,'geteuid',return_value=0), patch.object(m,'docker',side_effect=self.docker), patch.object(m,'rpc_status',return_value={'capture':3}), patch.object(m.time,'sleep'), patch.object(m.os,'fchown'):
+            with self.assertRaisesRegex(m.Failure,'original_restored'): m.update_catalog(self.args)
+        self.assertEqual(old,target.read_bytes())
+        self.assertEqual(2,sum('restart?' in path for _,path,_ in self.calls))
+    def test_unrecognized_prior_catalog_refused_without_restart(self):
+        target=self.prepare(); old=json.loads(target.read_text());old['namespace']='another';target.write_text(json.dumps(old))
+        with patch.object(m.os,'geteuid',return_value=0), patch.object(m,'docker') as docker:
+            with self.assertRaisesRegex(m.Failure,'requires_review'): m.update_catalog(self.args)
             docker.assert_not_called()
 
 if __name__=='__main__': unittest.main()

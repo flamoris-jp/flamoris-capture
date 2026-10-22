@@ -2,6 +2,8 @@
 
 Accepted for source implementation, 2026-10-22. Windows hands-on acceptance and release remain separate gates.
 
+Superseded in part by [ADR 0002](0002-simple-observation-recording.md): current screen gate, optional IDs, recording and interaction controls. This file records the earlier screenshot-only decision.
+
 ## Decision
 
 - .NET 10, WPF EXE, Windows Graphics Capture (WGC), D3D11 hardware device, BGRA8, one frame-pool buffer. API floor: Windows build 19041 (Windows 10 2004), win-x64 preview packaging. This is an API minimum, not a validated Windows/GPU support matrix.

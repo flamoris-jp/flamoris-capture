@@ -5,4 +5,5 @@
   <Project Path="src/Flamoris.Capture.App/Flamoris.Capture.App.csproj" />
   <Project Path="src/Flamoris.Capture.Bridge/Flamoris.Capture.Bridge.csproj" />
   <Project Path="tests/Flamoris.Capture.Tests/Flamoris.Capture.Tests.csproj" />
+  <Project Path="tests/Flamoris.Capture.Windows.Tests/Flamoris.Capture.Windows.Tests.csproj" />
 </Solution>

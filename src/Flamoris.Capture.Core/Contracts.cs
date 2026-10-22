@@ -10,14 +10,14 @@ public sealed record PixelRect([property: JsonRequired] int X, [property: JsonRe
     [property: JsonRequired] int Width, [property: JsonRequired] int Height);
 public sealed record ScreenshotRequest
 {
-    public required string SessionId { get; init; }
+    public string? SessionId { get; init; }
     public PixelRect? Roi { get; init; }
     public int MaxEdge { get; init; } = 1280;
     public string Format { get; init; } = "jpeg";
     public bool RequireExactSize { get; init; }
     public void Validate()
     {
-        if (string.IsNullOrWhiteSpace(SessionId) || MaxEdge is < 1 or > 1920 || Format is not ("png" or "jpeg"))
+        if ((SessionId is not null && string.IsNullOrWhiteSpace(SessionId)) || MaxEdge is < 1 or > 1920 || Format is not ("png" or "jpeg"))
             throw new CaptureFault("invalid_request");
         if (Roi is { } r && (r.X < 0 || r.Y < 0 || r.Width < 1 || r.Height < 1))
             throw new CaptureFault("invalid_request");

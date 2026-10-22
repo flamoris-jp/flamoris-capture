@@ -20,7 +20,7 @@ public sealed class HubCatalogTests
         Assert.Equal("flamoris.capture", root.GetProperty("product_id").GetString());
         Assert.Equal("CAPTURE_CONNECTOR_TOKEN", root.GetProperty("connector_token_env").GetString());
         var exported = core.DescribeCatalog().EnumerateArray().ToDictionary(x => x.GetProperty("name").GetString()!);
-        Assert.Equal(3, exported.Count);
+        Assert.Equal(7, exported.Count);
         var tools = root.GetProperty("tools").EnumerateArray().ToArray();
         Assert.Equal(exported.Count, tools.Length);
         foreach (var tool in tools)

@@ -1,7 +1,7 @@
 # FLAMORIS Capture Progress
 
-**Updated:** 2026-10-22  
-**Project status:** initial one-window screenshot source implemented; Windows hands-on/release pending
+**Updated:** 2026-10-23
+**Project status:** 0.2.0 current-window observation, bounded recording and operation trace source; physical Windows acceptance/release pending
 **Repository:** [flamoris-jp/flamoris-capture](https://github.com/flamoris-jp/flamoris-capture)
 
 This file separates **design readiness**, **source implementation**, **Windows hands-on acceptance**, and **release readiness**. A completed design checklist must never be reported as a tested feature.
@@ -13,12 +13,24 @@ This file separates **design readiness**, **source implementation**, **Windows h
 | Product scope, README and initial documentation | ✅ documented | Documentation review only | Not applicable | Not applicable |
 | Screenshot capture DLL | Implemented: WGC, bounded PNG/JPEG/ROI | Full Windows-target cross-build passed; image-policy tests passed | User screenshot confirms Cutwork one-shot preview; remaining cases pending | Not released |
 | Standalone EXE and target selection | Implemented: local selection, consent, preview, Stop | WPF cross-build passed | User screenshot confirms target selection/local preview; remaining cases pending | Not released |
-| MCP grants and image results | Implemented: two typed queries, shared Core/Wpf 1.3.1 | Adapter/contracts and actual bridge Windows CI passed (24b035e) | Pending | Not released |
+| MCP grants and image results | Implemented: six typed queries, optional IDs, shared Core/Wpf 1.3.1 | Adapter/contracts and actual bridge Windows CI passed (24b035e) | Pending | Not released |
 | Window / rectangle / monitor coverage | Window source only; rectangle/monitor not implemented | Source checks only | Pending | Not released |
-| Short video, indexed observation, cleanup | Not started | Not started | Not started | Not available |
-| Metadata-first video observation, frame selection, contact sheets | Basic design v0.1 documented; code not started | Documentation consistency review only | Not started | Not available |
-| Interaction-event trace and synchronization | Not started | Not started | Not started | Not available |
+| Short video, indexed observation, cleanup | Bounded 10fps JPEG sequence, local playback/scrub, silent H.264 MP4 export, normal-exit cleanup | Cross-build/pure recording tests; platform encoder CI pending | Pending | Development source |
+| Metadata-first video observation, frame selection, contact sheets | Summary, latest/index/time frame and 1–9 cell sheet | Contract/revoke tests; platform sheet CI pending | Pending | Development source |
+| Interaction-event trace and synchronization | Target-foreground Raw Input, physical keys/numpad/mouse, opt-in notice/badge, QPC JSON | Pure opt-in/page/queue tests | Blender/password/custom control acceptance pending | Development source |
 | Windows packaging and published binaries | Self-contained win-x64 publish script and CI | Windows CI publish passed (24b035e) | Pending | No release/installer |
+
+## 2026-10-23 — Current-window workflow, recording and operations
+
+- User-approved toolbar UI: direct current-window observation without required session IDs, screen/operation checkboxes, yellow operation/red recording badges, common first-enable notice and persisted opt-out/settings restore.
+- Screen OFF gates local and MCP pixel acquisition and cancels recording; operation recording remains independently available. Target/OS/Stop revocation stops both. Recorded assets lose MCP authority on revoke and stay locally saveable; re-enabling operations cannot reauthorize old footage.
+- Bounded acquired-frame recording (10fps nominal, max edge 1280, 15 minutes / 9,000 frames / 512 MiB frame files), local time-based playback/slider, silent platform H.264 MP4 export and explicit operation/frame JSON save. Single-frame acquisition is reused; source stalls reduce FPS and remain timestamp gaps.
+- Six product queries plus Core context (seven Hub descriptors). Summary, frame index/time/latest, one contact sheet and paginated events; no remote start/stop, input replay, arbitrary files or whole-video transfer.
+- Physical key/numpad and pointer events are filtered to the selected foreground root. Known UI Automation password/editable/text fields suppress keys. Custom-control detection is best effort; no universal secret filtering is claimed.
+- Existing-catalog upgrade preserves credentials, runtime.env and Docker container identity; only the Hub catalog is backed up/replaced and its current container restarted, with health verification and catalog rollback. No live server operation was performed by this change.
+- Verification before Windows CI: whole solution cross-build including new Windows tests, zero warnings/errors; 28 pure C# cases passed and one Windows bridge test explicitly skipped on Linux; 17 mocked host-helper tests passed. Windows CI adds actual published-bridge and synthetic JPEG/contact-sheet/H.264 encode-decode checks; results recorded separately below when complete.
+- All real-display recording, input routing, Blender, DPI, OS lifecycle/performance and physical client image acceptance remain pending. Source and synthetic tests do not prove those cases.
+- Current contract: [ADR 0002](docs/decisions/0002-simple-observation-recording.md). Earlier entries below are historical evidence for the initial screenshot slice, not current feature limits.
 
 ## 2026-10-22 — Repository initialization
 
