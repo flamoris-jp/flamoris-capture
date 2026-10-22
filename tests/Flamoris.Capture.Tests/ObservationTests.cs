@@ -37,6 +37,18 @@ public sealed class ObservationTests
         var old = JsonSerializer.SerializeToElement(new { sessionId = "expired-id" });
         Assert.Equal("stale_session", (await boundary.InvokeAsync(grant, "capture.screenshot.get", old, null)).Error);
     }
+    [Fact] public async Task OperationsOnlyMcpReadsEventsButCannotReadPixels()
+    {
+        using var session = Session(); session.SetSharing(false); session.Observation.SetOperations(true);
+        session.Observation.AddEvent("keyDown", "NumPad1");
+        using var boundary = Boundary(session); using var grant = await boundary.EnableAsync(McpPermission.ReadOnly);
+        Assert.False((await boundary.InvokeAsync(grant, "capture.session.get", Empty, null)).IsError);
+        var events = await boundary.InvokeAsync(grant, "capture.events.get", Empty, null);
+        Assert.False(events.IsError); Assert.Single(events.Value!.Value.GetProperty("events").EnumerateArray());
+        Assert.Equal("forbidden", (await boundary.InvokeAsync(grant, "capture.screenshot.get", Empty, null)).Error);
+        session.Observation.SetOperations(false);
+        Assert.True((await boundary.InvokeAsync(grant, "capture.events.get", Empty, null)).IsError);
+    }
     [Fact] public async Task RecordStopAndSelectTimeOrIndexWithoutSendingVideo()
     {
         using var session = Session(); session.Observation.StartRecording(); await WaitFrames(session, 3);
