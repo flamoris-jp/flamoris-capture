@@ -4,7 +4,7 @@
 
 A Windows screen-observation toolkit for people and AI: a reusable capture DLL, an independent desktop EXE, and an MCP adapter over the same permissioned session. FLAMORIS applications and unrelated Windows applications can be observed without modifying them.
 
-**Status: 0.2.0 development preview source.** One approved window, direct MCP screenshots, bounded recording, selective frame observation and opt-in interaction recording are implemented. Automated verification and physical Windows acceptance are separate; no stable release/installer is claimed. See [PROGRESS.md](PROGRESS.md).
+**Status: 0.2.0 development preview source.** One approved window, direct MCP screenshots, bounded recording, selective frame observation and opt-in interaction recording are implemented. The basic real-Windows workflow was confirmed on 2026-10-24: MCP screenshots, recording, selective frames/contact sheets and mouse/key events. Broader platform/lifecycle acceptance remains separate; no stable release/installer is claimed. See [PROGRESS.md](PROGRESS.md).
 
 ## What works
 
@@ -16,7 +16,7 @@ A Windows screen-observation toolkit for people and AI: a reusable capture DLL, 
 - A shared first-use notice has only OK and an initially unchecked **次回からこのメッセージを表示しない**. **設定 → 安全確認メッセージを表示する** restores it. No acquisition begins before OK.
 - Core/Wpf 1.3.1 still own MCP transport, authorization, providers, connection UI and single-image results. No second session/target authority is introduced.
 
-**Limitations:** one window only; no monitor/rectangle capture, audio, cursor overlay, imported-video player, input replay, comparison, installer or signing. Input recording suppresses keys in UI Automation-recognized password/editable/text controls; custom controls may not report their nature, and physical key sequences can reveal typed information. The notice and explicit stop remain essential. OS/GPU/Blender hands-on acceptance is pending.
+**Limitations:** one window only; no monitor/rectangle capture, audio, cursor overlay, imported-video player, input replay, comparison, installer or signing. Input recording suppresses keys in UI Automation-recognized password/editable/text controls; custom controls may not report their nature, and physical key sequences can reveal typed information. The notice and explicit stop remain essential. The tested workflow and remaining OS/GPU/Blender cases are recorded in [Windows acceptance](docs/WINDOWS-ACCEPTANCE.md).
 
 ## Build and run
 
@@ -30,7 +30,7 @@ dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
 ./artifacts/windows/FLAMORIS-Capture-win-x64/Flamoris.Capture.App.exe
 ```
 
-For routine updates, close Capture, run `git pull --ff-only`, then repeat the publish and EXE commands above. The desktop-family entry point is `product/packaging/publish-windows.ps1`. The legacy `scripts/publish.ps1` entry point still defaults to `artifacts/win-x64`.
+For routine updates, close Capture, switch to `main` with `git switch main`, run `git pull --ff-only`, then repeat the publish and EXE commands above. Pulling source alone does not rebuild the EXE; launch the newly published bundle. The desktop-family entry point is `product/packaging/publish-windows.ps1`. The legacy `scripts/publish.ps1` entry point still defaults to `artifacts/win-x64`.
 
 The publish script places the app, reusable DLLs, Core-based bridge and self-contained .NET runtime together. Keep the entire folder; the EXE alone is not the bundle. Development can also use `dotnet run --project src/Flamoris.Capture.App`; manual/tunnel MCP needs the published bridge alongside the app. Restore uses public nuget.org, without a GitHub token.
 
