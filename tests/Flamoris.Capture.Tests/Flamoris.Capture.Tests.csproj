@@ -6,4 +6,5 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.1" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup><None Include="../../config/hub-capture.example.json" Link="hub-capture.example.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Include="../../config/hub-embedded-capture.tools.json" Link="hub-embedded-capture.tools.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
 </Project>

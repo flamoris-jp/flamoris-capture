@@ -74,3 +74,10 @@ FLAMORIS: [organization map](https://github.com/flamoris-jp/.github) · [Desktop
 ## License and support
 
 Source is [Apache-2.0](LICENSE). Windows SDK/platform APIs and NuGet dependencies retain their own terms; no model, media or third-party capture backend is vendored. See ADR 0001 for dependencies. FLAMORIS is provided as-is, without guaranteed individual support.
+
+## Embedded editor observation
+
+`Flamoris.Capture.Wpf` supplies a visible, opt-in owner-window sharing control and
+two screenshot tools for an editor's existing MCP connection. Cutwork and 2D can
+reference it without launching the standalone EXE. See
+[ADR 0003](docs/decisions/0003-embedded-editor-observation.md).

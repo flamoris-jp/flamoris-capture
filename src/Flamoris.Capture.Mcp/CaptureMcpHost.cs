@@ -42,6 +42,10 @@ public sealed class CaptureMcpHost(CaptureSession session, IContactSheetRenderer
         if (value is SessionRequest sessionRequest && (sessionRequest.SessionId is not null && string.IsNullOrWhiteSpace(sessionRequest.SessionId))) throw new JsonException();
         return value;
     }
+    /// <summary>Read-only observation surface for an editor's existing MCP boundary.</summary>
+    public IEnumerable<HostTool> ScreenshotTools() => Tools().Where(tool =>
+        tool.Name is "capture.session.get" or "capture.screenshot.get");
+
     public IEnumerable<HostTool> Tools()
     {
         yield return new HostTool<SessionRequest>("capture.session.get", "Read the currently approved window and limits. No sessionId needed; no pixels or window enumeration.",

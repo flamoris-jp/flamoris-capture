@@ -153,3 +153,10 @@ Details: [Setup](docs/SETUP.md) · [Architecture](docs/ARCHITECTURE.md) · [Priv
 Selective-observation contract: [基本設計 v0.1](docs/BASIC-DESIGN.md).
 
 
+
+## 2026-10-24 Embedded WPF observation candidate
+
+- Shared owner-window consent/lifecycle control and screenshot-only MCP surface.
+- Common privacy notice reused by standalone and embedded hosts.
+- Editor boundary composition/consent/revocation contract tests added.
+- Real Windows embedding acceptance remains pending.

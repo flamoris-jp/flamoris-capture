@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="src/Flamoris.Capture.Wpf/Flamoris.Capture.Wpf.csproj" />
   <Project Path="src/Flamoris.Capture.Core/Flamoris.Capture.Core.csproj" />
   <Project Path="src/Flamoris.Capture.Windows/Flamoris.Capture.Windows.csproj" />
   <Project Path="src/Flamoris.Capture.Mcp/Flamoris.Capture.Mcp.csproj" />

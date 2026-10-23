@@ -3,15 +3,16 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace Flamoris.Capture.App;
+namespace Flamoris.Capture.Wpf;
 
-internal sealed class PrivacyNotice
+public sealed class PrivacyNotice
 {
-    private readonly string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FLAMORIS", "Capture", "capture-preferences.json");
+    private readonly string path;
     private bool shown;
     public bool Suppress { get; private set; }
-    public PrivacyNotice()
+    public PrivacyNotice(string? preferencePath = null)
     {
+        path = preferencePath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FLAMORIS", "Capture", "capture-preferences.json");
         try { Suppress = JsonSerializer.Deserialize<Preference>(File.ReadAllText(path))?.SuppressNotice ?? false; }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { }
     }
@@ -25,7 +26,7 @@ internal sealed class PrivacyNotice
     public bool Confirm(Window owner)
     {
         if (Suppress || shown) return true;
-        var dialog = new Window { Owner = owner, Title = "操作記録の確認", SizeToContent = SizeToContent.Height, Width = 470,
+        var dialog = new Window { Owner = owner, Title = "画面共有・操作記録の確認", SizeToContent = SizeToContent.Height, Width = 470,
             ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterOwner, ShowInTaskbar = false };
         var panel = new StackPanel { Margin = new Thickness(24) };
         panel.Children.Add(new TextBlock { Text = "画面共有中や操作記録中は、個人情報、パスワード、機密情報を入力・表示しないでください。これらの情報が共有または記録される可能性があります。", TextWrapping = TextWrapping.Wrap, FontSize = 15 });
