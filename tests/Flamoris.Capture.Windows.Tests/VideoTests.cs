@@ -1,3 +1,4 @@
+using System.IO;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Flamoris.Capture.Core;
 using Flamoris.Capture.Windows;

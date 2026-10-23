@@ -1,0 +1,156 @@
+[
+  {
+    "name": "capture.session.get",
+    "description": "Read the currently approved window and limits. No sessionId needed; no pixels or window enumeration.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "guard": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "runtimeId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "documentToken": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "expectedRevision": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 19
+            }
+          },
+          "required": [
+            "runtimeId",
+            "documentToken"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "input"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "capture.screenshot.get",
+    "description": "Capture the currently shared window. No sessionId needed; no target switching. PNG/JPEG <= 1 MiB.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxEdge": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1920,
+              "default": 1280
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "png",
+                "jpeg"
+              ],
+              "default": "jpeg"
+            },
+            "requireExactSize": {
+              "type": "boolean",
+              "default": false
+            },
+            "roi": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "x",
+                "y",
+                "width",
+                "height"
+              ],
+              "properties": {
+                "x": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "width": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "guard": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "runtimeId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "documentToken": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "expectedRevision": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 19
+            }
+          },
+          "required": [
+            "runtimeId",
+            "documentToken"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "input"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  }
+]

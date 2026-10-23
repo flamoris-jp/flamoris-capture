@@ -5,6 +5,7 @@ using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Flamoris.Capture.Core;
+using Flamoris.Capture.Wpf;
 using Flamoris.Capture.Mcp;
 using Flamoris.Capture.Windows;
 using Flamoris.Logging;

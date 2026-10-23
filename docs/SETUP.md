@@ -132,3 +132,24 @@ Read all event pages: pass the returned `nextSequence` as `afterSequence` until 
 - `timeout`: a shot exceeded the 5-second deadline. Native driver/encoder cleanup may outlive result cancellation; Stop still revokes immediately.
 
 See [Windows acceptance](WINDOWS-ACCEPTANCE.md) for the basic real-Windows workflow confirmed on 2026-10-24 and the remaining platform/lifecycle/export checks. A confirmed workflow does not imply a stable release.
+
+### Embedded WPF editor host
+
+Reference `src/Flamoris.Capture.Wpf/Flamoris.Capture.Wpf.csproj` from a
+`net10.0-windows10.0.19041.0` WPF app. Construct `EmbeddedWindowCapture(owner,
+revokeMcp)`, put its `Control` in the host's visible status bar, and append
+`Tools()` to the host's existing MCP boundary.
+
+Acquire `var captureLease = capture.BeginConnection()` while attaching the MCP
+connection. Dispose the lease in the attachment's `StopHost` callback and on
+any attach failure. The MCP connection itself includes observation of the host
+window, in both read-only and edit modes. There is no additional checkbox,
+notice or independent sharing preference for this embedded workflow.
+`revokeMcp` invalidates the current editor grant on OS/window lifecycle loss.
+Dispose the component with the host and call `Stop()` on loss/replacement of
+editing authority as appropriate. Core/Wpf/bridge must be 1.3.1.
+
+For an existing Hub editor catalog, append the two entries in
+`config/hub-embedded-capture.tools.json`; preserve the rest of the catalog and
+connector configuration. The fragment is verified against actual Core wire
+schemas in the composed editor-boundary tests. See ADR 0003.
