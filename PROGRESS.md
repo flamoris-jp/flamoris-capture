@@ -1,7 +1,7 @@
 # FLAMORIS Capture Progress
 
-**Updated:** 2026-10-23
-**Project status:** 0.2.0 current-window observation, bounded recording and operation trace source; physical Windows acceptance/release pending
+**Updated:** 2026-10-24
+**Project status:** 0.2.0 current-window observation, bounded recording and operation trace source; basic Windows/MCP workflow accepted; broader platform/lifecycle acceptance and release pending
 **Repository:** [flamoris-jp/flamoris-capture](https://github.com/flamoris-jp/flamoris-capture)
 
 This file separates **design readiness**, **source implementation**, **Windows hands-on acceptance**, and **release readiness**. A completed design checklist must never be reported as a tested feature.
@@ -13,12 +13,26 @@ This file separates **design readiness**, **source implementation**, **Windows h
 | Product scope, README and initial documentation | ✅ documented | Documentation review only | Not applicable | Not applicable |
 | Screenshot capture DLL | Implemented: WGC, bounded PNG/JPEG/ROI | Full Windows-target cross-build passed; image-policy tests passed | User screenshot confirms Cutwork one-shot preview; remaining cases pending | Not released |
 | Standalone EXE and target selection | Implemented: local selection, consent, preview, Stop | WPF cross-build passed | User screenshot confirms target selection/local preview; remaining cases pending | Not released |
-| MCP grants and image results | Implemented: six typed queries, optional IDs, shared Core/Wpf 1.3.1 | Adapter/contracts and actual bridge Windows CI passed (24b035e) | Pending | Not released |
-| Window / rectangle / monitor coverage | Window source only; rectangle/monitor not implemented | Source checks only | Pending | Not released |
-| Short video, indexed observation, cleanup | Bounded 10fps JPEG sequence, local playback/scrub, silent H.264 MP4 export, normal-exit cleanup | Cross-build/pure recording tests; Windows synthetic H.264 encode/decode passed (8cb0f44) | Pending | Development source |
-| Metadata-first video observation, frame selection, contact sheets | Summary, latest/index/time frame and 1–9 cell sheet | Contract/revoke tests; Windows platform sheet passed (8cb0f44) | Pending | Development source |
-| Interaction-event trace and synchronization | Target-foreground Raw Input, physical keys/numpad/mouse, opt-in notice/badge, QPC JSON | Pure opt-in/page/queue tests | Blender/password/custom control acceptance pending | Development source |
-| Windows packaging and published binaries | Self-contained win-x64 publish script and CI | Windows CI publish passed (24b035e) | Pending | No release/installer |
+| MCP grants and image results | Implemented: six typed queries, optional IDs, shared Core/Wpf 1.3.1 | Adapter/contracts and actual bridge Windows CI passed (24b035e) | Real Hub-to-client screenshot displayed without session ID (2026-10-24); remaining grant/revoke cases pending | Not released |
+| Window / rectangle / monitor coverage | Window source only; rectangle/monitor not implemented | Source checks only | Selected-window capture confirmed; rectangle/monitor unimplemented | Not released |
+| Short video, indexed observation, cleanup | Bounded 10fps JPEG sequence, local playback/scrub, silent H.264 MP4 export, normal-exit cleanup | Cross-build/pure recording tests; Windows synthetic H.264 encode/decode passed (8cb0f44) | Real start/stop and frame retention confirmed; local MP4/JSON export, playback and cleanup not reverified | Development source |
+| Metadata-first video observation, frame selection, contact sheets | Summary, latest/index/time frame and 1–9 cell sheet | Contract/revoke tests; Windows platform sheet passed (8cb0f44) | Real summary, six-cell sheet and time-selected images displayed (2026-10-24) | Development source |
+| Interaction-event trace and synchronization | Target-foreground Raw Input, physical keys/numpad/mouse, opt-in notice/badge, QPC JSON | Pure opt-in/page/queue tests | Mouse drag and Left/Space down/up confirmed; Blender/password/custom control cases pending | Development source |
+| Windows packaging and published binaries | Self-contained win-x64 publish script and CI | Windows CI publish passed (24b035e) | User rebuilt/launched updated checkout; installer/signing not accepted | No release/installer |
+
+## 2026-10-24 — Basic real-Windows / Hub observation acceptance
+
+The user and AI completed the basic workflow using the running Windows Capture app and a selected Kachinco window. Evidence is live MCP image display and sanitized response counters from this acceptance session, not synthetic CI alone. Exact app commit, Windows build and GPU/driver versions were not collected, so this does not define a platform support matrix.
+
+- After the user rebuilt/launched the updated app, upgraded the Hub catalog and connected Capture, `capture.screenshot.get` with `input: {}` returned a decodable image visibly matching the selected Kachinco window. No session-ID discovery was needed.
+- The human started/stopped recording in Capture. One stopped sample reported **87 frames over 8,665.9187 ms**. The AI displayed a six-cell contact sheet and retrieved the frame at/before a requested 5,000 ms (actual **4,949.2339 ms**). This confirms selective image observation, not whole-video transfer.
+- A mouse sample reported **172 events**, **0 dropped events**. Left-button down at **12,530.6356 ms** and up at **14,535.581 ms** corresponded to before/after frames showing the Kachinco playhead moving from about 0.07 s to 1.5 s. This supports the observed drag sequence; it is not a measured synchronization-error bound or causal proof.
+- A subsequent sample reported **130 events**, **0 dropped events**, including **three Left-arrow and three Space presses, each with keyDown and keyUp**. Mouse and keyboard operation retrieval are confirmed for this selected-app case.
+- An earlier text-entry trial contained no keyboard events. Source inspection confirms suppression for recognized editable/text/password controls; the focused control was not instrumented, so that trial is not proof of password detection or universal text suppression.
+- **Basic observation acceptance is complete:** current-window screenshot → human-controlled recording → selective frames/contact sheet → mouse/key event retrieval. Acquisition start/stop/save remain human UI actions; MCP exposes read queries.
+- Not exercised here: local MP4/JSON save and playback, Blender single-letter/numpad/NumLock behavior, wheel/modifier coverage, independent operation-only access, permission revoke/OS lifecycle, cleanup/resource caps, DPI/OS/GPU matrix and release/signing. Prior synthetic encoder tests remain separate evidence.
+
+See [Windows acceptance](docs/WINDOWS-ACCEPTANCE.md) for the remaining checks. No raw user captures, input text, credentials, session IDs or private topology are committed.
 
 ## 2026-10-23 — Current-window workflow, recording and operations
 
@@ -30,7 +44,7 @@ This file separates **design readiness**, **source implementation**, **Windows h
 - Existing-catalog upgrade preserves credentials, runtime.env and Docker container identity; only the Hub catalog is backed up/replaced and its current container restarted, with health verification and catalog rollback. No live server operation was performed by this change.
 - Verification before Windows CI: whole solution cross-build including new Windows tests, zero warnings/errors; 29 pure C# cases passed and one Windows bridge test explicitly skipped on Linux; 17 mocked host-helper tests passed. Windows CI adds actual published-bridge and synthetic JPEG/contact-sheet/H.264 encode-decode checks; results recorded separately below when complete.
 - Windows CI [39806522127](https://github.com/flamoris-jp/flamoris-capture/actions/runs/39806522127) at `8cb0f44`: build/publish succeeded with zero warnings/errors; **29 Core/MCP/actual-bridge cases passed with no skips**, plus **one Windows synthetic JPEG/contact-sheet/H.264 MP4 encode-decode case passed**. The self-contained preview artifact is available on that run. The subsequent operation-only MCP regression case also passes locally; it changes tests only.
-- All real-display recording, input routing, Blender, DPI, OS lifecycle/performance and physical client image acceptance remain pending. Source and synthetic tests do not prove those cases.
+- At this implementation checkpoint, real-display/input/client-image acceptance was pending. The basic Kachinco workflow was subsequently confirmed on 2026-10-24 above; Blender, DPI, OS lifecycle/performance and other untested cases remain pending.
 - Current contract: [ADR 0002](docs/decisions/0002-simple-observation-recording.md). Earlier entries below are historical evidence for the initial screenshot slice, not current feature limits.
 
 ## 2026-10-22 — Repository initialization
@@ -102,21 +116,21 @@ This file separates **design readiness**, **source implementation**, **Windows h
 - [x] Author code + deterministic tests for target identity, sizing, ROI, bounds and session lifetime.
 - [x] Create a minimal human-visible EXE with target selection, capture indicator and stop/revoke.
 - [x] Provide a **bounded one-shot** MCP screenshot using the existing FLAMORIS MCP infrastructure.
-- [ ] Demonstrate a screenshot of a consented Window in a real Windows session with full metadata and no unrelated content.
+- [x] Demonstrate a selected-window screenshot with image metadata displayed by a real MCP client (Kachinco, 2026-10-24); broader isolation/target-reuse cases remain pending.
 - [ ] Verify window-close, permission revoke, target reuse, lock/secure content and oversized image paths.
 
 ### P2 · Expand targets and video
 
 - [ ] Implement rectangle and selected-monitor capture, including negative virtual-monitor coordinates and mixed DPI.
-- [ ] Add bounded recording start/status/stop/cancel, recording indicator and encode failure handling.
+- [x] Implement bounded local recording and status/stop handling; real start/stop and frame retention confirmed 2026-10-24. Cancellation/indicator/failure cases still require full physical acceptance.
 - [ ] Finalize video with a display-order frame index and recording-time/PTS mapping; use short-lived recording IDs without embedding video bytes in MCP.
-- [ ] P2a: summary and selected frame by time/index, actual timestamp and explicit gaps.
+- [x] Implement summary and selected recorded frames by time/index with actual timestamps. Summary and time selection confirmed on real footage 2026-10-24; explicit index/gap edge cases remain automated-only.
 - [ ] P2b: bounded sample selections, contact sheet, ROI and comparable-geometry diff with at most one image per result.
 - [ ] Verify playable output, artifact SHA-256 and size, TTL, cleanup and dropped-frame reporting.
 
 ### P3 · Optional input trace and productization
 
-- [ ] Evaluate application-scoped pointer/shortcut/window-state capture and sensitive-field redaction.
+- [x] Implement selected-foreground physical key/mouse trace and recognized text-control suppression. Mouse and Left/Space key down/up confirmed 2026-10-24; broader input/control/window-state cases remain pending.
 - [ ] Record timestamps relative to capture frames and quantify synchronization drift.
 - [ ] Validate HowTo/debug report generation without claiming deterministic replay or guaranteed causal inference.
 - [ ] Add CI, documented supported OS matrix, self-contained distribution and supply-chain/license review.
@@ -128,11 +142,11 @@ This file separates **design readiness**, **source implementation**, **Windows h
 - MCP client image support and video transfer limits vary; metadata/bytes receipt does not prove the client can view the video.
 - Recording event traces may expose sensitive user data; keyboard free text and cross-window global hooks are **not** accepted defaults.
 - A rectangle/monitor includes whatever was visible in that region; stronger consent and preview are essential.
-- File retention, disk quotas, video codec/packaging and signing strategy remain undecided.
+- Current temporary-frame bounds, normal-exit cleanup and silent Windows H.264 export are defined in ADR 0002. Measured resource behavior, broader retention/expiry and signing remain open.
 
 ## Next concrete deliverable
 
-**Run the win-x64 preview on a physical interactive Windows desktop and complete [WINDOWS-ACCEPTANCE.md](docs/WINDOWS-ACCEPTANCE.md), including a real selected-window MCP image displayed by a client.** Source implementation is complete for this slice; P1 acceptance remains open. Measure GPU/CPU peak, DPI geometry, protected/minimized/occluded behavior and revoke/lock responsiveness before a release.
+**The basic selected-window observation workflow is accepted (2026-10-24).** Complete the remaining [Windows acceptance](docs/WINDOWS-ACCEPTANCE.md) cases before a release: local MP4/JSON save/playback, Blender inputs, revoke/lock behavior, DPI/platform coverage and measured resource/cleanup behavior. This documentation update does not change the development-preview release status.
 
 Details: [Setup](docs/SETUP.md) · [Architecture](docs/ARCHITECTURE.md) · [Privacy](docs/SECURITY-PRIVACY.md) · [Test plan](docs/TEST-PLAN.md).
 

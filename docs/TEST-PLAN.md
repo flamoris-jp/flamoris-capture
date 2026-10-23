@@ -2,7 +2,7 @@
 
 > Current implementation (0.2.0): [ADR 0002](decisions/0002-simple-observation-recording.md), [README](../README.md) and [Setup](SETUP.md). The text below is the earlier broader design/acceptance roadmap; its proposed IDs, tool names, retention numbers and unimplemented labels do not define the current wire contract. Screenshots, bounded recording, selected frames/contact sheets and opt-in physical key/mouse traces now have source implementations. Physical Windows acceptance remains separate.
 
-**Status:** executable pure contract/session/image-policy/adapter tests and an optional official-client bridge integration now exist in `tests/Flamoris.Capture.Tests`. Windows CI enables the latter using synthetic pixels. Physical WGC/display acceptance has not been executed; use [WINDOWS-ACCEPTANCE](WINDOWS-ACCEPTANCE.md). CI/contract results are recorded separately in [PROGRESS](../PROGRESS.md). Future video/region/trace cases remain plans.
+**Status:** executable pure contract/session/image-policy/adapter tests and an optional official-client bridge integration now exist in `tests/Flamoris.Capture.Tests`. Windows CI enables the latter using synthetic pixels. The basic real-Windows/Hub workflow was confirmed on 2026-10-24 (screenshots, recording, selective images and mouse/Left/Space traces); use [WINDOWS-ACCEPTANCE](WINDOWS-ACCEPTANCE.md) for exact evidence and remaining checks. CI/contract results are recorded separately in [PROGRESS](../PROGRESS.md). Advanced video/region/trace cases below remain roadmap checks unless explicitly recorded as observed.
 
 ## Test layers
 
@@ -18,7 +18,7 @@
 
 - [ ] Application starts with capture and MCP disclosure OFF.
 - [ ] User selects exactly one Window and explicitly permits capture.
-- [ ] One still PNG/JPEG matches the selected target with correct dimensions and ROI mapping; data returned to client is actually decodable/displayable.
+- [x] A real selected-window JPEG is decodable/displayable in the MCP client (2026-10-24). Exact-size/ROI mapping and broader isolation cases remain unchecked separately.
 - [ ] Exact target identity and frame timing metadata survive through MCP; bounded image contract respects current MCP Core limits.
 - [ ] Revoke/close/window replacement/lock/sleep cancel active work and invalidate stale handles; screenshot stop ends acquisition without a hidden recorder.
 - [ ] Invalid/oversized output and unsupported protected content fail safely.
@@ -31,9 +31,11 @@
 - [ ] Separate consent is needed when widening scope from a window to a region/monitor.
 - [ ] Bounded 5-second sample video can start/stop, plays back, reports size/FPS/dropped frames, and passes SHA-256 checks.
 - [ ] Window resize/segments preserve geometry; target close, encoder failure, cancel, storage cap and expiry follow the basic-design cleanup rules. Normal stop finalizes a bounded recording for authorized observation.
-- [ ] A client with image support can inspect selected frames without video-input support. The product does not claim that video bytes were viewed by AI or offer an unimplemented raw-video transfer tool.
+- [x] A real MCP client displayed a six-frame contact sheet and a time-selected detailed frame from a human-stopped recording (2026-10-24). No whole-video transfer is claimed.
 
 ## M3: Interaction trace (optional)
+
+Observed subset on 2026-10-24: mouse movement/buttons/drag and Left ×3 / Space ×3 with down/up events. The 130-event key trial reported zero queue evictions. Event-relative times located before/after recorded frames for a mouse drag; drift and capture completeness were not measured. The composite checks below remain open for their untested parts.
 
 - [ ] Pointer click, drag, wheel, window resize and allowlisted application shortcut events share a monotonic time base with capture frames.
 - [ ] Timestamps quantify drift and gaps; lost events are flagged, not silently patched.

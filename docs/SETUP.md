@@ -34,6 +34,7 @@ dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
 For routine use from a Git checkout, close Capture before publishing and run:
 
 ```powershell
+git switch main
 git pull --ff-only
 ./product/packaging/publish-windows.ps1
 ./artifacts/windows/FLAMORIS-Capture-win-x64/Flamoris.Capture.App.exe
@@ -109,8 +110,19 @@ After human screen consent, call `session.SetSharing(true)`; then await `session
 
 For MCP, reference `Flamoris.Capture.Mcp` and adapt the same session with `CaptureMcpHost`. Do not instantiate a second session/target for AI requests. Core authorization is in addition to product consent. Pass `ContactSheetRenderer` to `CaptureMcpHost` for sheet rendering. `session.Observation` owns the bounded recording and event timeline; `VideoExporter` saves a stopped recording locally.
 
+## Key-recording smoke test
+
+Enable **操作記録**, then click the selected application's timeline/canvas (outside a text-entry control) and press Left three times and Space three times. Read `capture.events.get`; expect physical `keyDown` / `keyUp` events for `Left` and `Space`. These keys may move the playhead or start playback, so use a test project. This case passed in Kachinco on 2026-10-24; see [Windows acceptance](WINDOWS-ACCEPTANCE.md).
+
+Typing into a recognized text-entry field is not a valid test of command-key capture: password, Edit, TextPattern and writable ValuePattern controls suppress keyboard events. The app does not translate physical keys into Unicode/IME text. A custom control or automation-provider failure can affect the result; do not infer universal secret detection.
+
+Read all event pages: pass the returned `nextSequence` as `afterSequence` until no further events remain. Sequence numbers need not restart at 1 for each recording; use the returned cursor rather than event counts. `droppedEvents: 0` reports no queue eviction, not proof that every physical device packet was captured.
+
 ## Troubleshooting
 
+- Hub reports the Capture upstream offline: connect Capture through its MCP menu after enabling the intended capabilities; catalog registration alone does not connect the desktop app.
+- Updated source but old UI: close Capture, switch to `main`, pull, republish, and launch the EXE in the new output folder. `git pull` alone does not update an existing EXE.
+- Mouse events but no keys: confirm the selected target is foreground and focus its timeline/canvas rather than a recognized text-entry control; then inspect all event pages. Separate dialogs/popups with a different root are outside the selected-window trace.
 - `target_lost`: reselect and authorize a live window; the app never follows a replacement window.
 - `frame_unavailable`: restore a minimized/hidden window, let resizing settle, retry. Protected/secure/occluded behavior is not guaranteed; there is no broader capture fallback.
 - `unsupported_capability`: required WGC capability/target kind is unavailable.
@@ -119,4 +131,4 @@ For MCP, reference `Flamoris.Capture.Mcp` and adapt the same session with `Captu
 - `busy`: one acquisition is still running/cleaning up; no requests are queued.
 - `timeout`: a shot exceeded the 5-second deadline. Native driver/encoder cleanup may outlive result cancellation; Stop still revokes immediately.
 
-See [Windows acceptance](WINDOWS-ACCEPTANCE.md) before calling the preview tested on physical Windows or released.
+See [Windows acceptance](WINDOWS-ACCEPTANCE.md) for the basic real-Windows workflow confirmed on 2026-10-24 and the remaining platform/lifecycle/export checks. A confirmed workflow does not imply a stable release.
