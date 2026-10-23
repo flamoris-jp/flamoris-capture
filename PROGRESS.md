@@ -160,3 +160,11 @@ Selective-observation contract: [基本設計 v0.1](docs/BASIC-DESIGN.md).
 - Common privacy notice reused by standalone and embedded hosts.
 - Editor boundary composition/consent/revocation contract tests added.
 - Real Windows embedding acceptance remains pending.
+
+### Embedded connection policy update (2026-10-24)
+
+- User accepted MCP connection as authorization to observe that editor window.
+- No separate embedded sharing checkbox, notice or saved sharing preference.
+- A connection lease starts sharing and releases it on detach/failure; stale leases
+  cannot stop newer connections. The status bar reports sharing state.
+- Standalone Capture retains its original explicit consent controls.

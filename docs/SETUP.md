@@ -137,11 +137,17 @@ See [Windows acceptance](WINDOWS-ACCEPTANCE.md) for the basic real-Windows workf
 
 Reference `src/Flamoris.Capture.Wpf/Flamoris.Capture.Wpf.csproj` from a
 `net10.0-windows10.0.19041.0` WPF app. Construct `EmbeddedWindowCapture(owner,
-preferencePath, revokeMcp)`, put its `Control` in the host's visible status bar,
-and append `Tools()` to the host's existing MCP boundary. `revokeMcp` invalidates
-the current editor grant; reconnect after changing sharing. Dispose it with the
-host and stop it on loss/replacement of editing authority as appropriate.
-The host must use Core/Wpf/bridge 1.3.1. Do not use a standalone Capture upstream.
+revokeMcp)`, put its `Control` in the host's visible status bar, and append
+`Tools()` to the host's existing MCP boundary.
+
+Acquire `var captureLease = capture.BeginConnection()` while attaching the MCP
+connection. Dispose the lease in the attachment's `StopHost` callback and on
+any attach failure. The MCP connection itself includes observation of the host
+window, in both read-only and edit modes. There is no additional checkbox,
+notice or independent sharing preference for this embedded workflow.
+`revokeMcp` invalidates the current editor grant on OS/window lifecycle loss.
+Dispose the component with the host and call `Stop()` on loss/replacement of
+editing authority as appropriate. Core/Wpf/bridge must be 1.3.1.
 
 For an existing Hub editor catalog, append the two entries in
 `config/hub-embedded-capture.tools.json`; preserve the rest of the catalog and

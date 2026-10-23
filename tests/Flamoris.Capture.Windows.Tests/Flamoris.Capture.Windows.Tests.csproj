@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><TargetFramework>net10.0-windows10.0.19041.0</TargetFramework><IsTestProject>true</IsTestProject></PropertyGroup>
+  <PropertyGroup><TargetFramework>net10.0-windows10.0.19041.0</TargetFramework><IsTestProject>true</IsTestProject><UseWPF>true</UseWPF></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/Flamoris.Capture.Wpf/Flamoris.Capture.Wpf.csproj" />
     <ProjectReference Include="../../src/Flamoris.Capture.Windows/Flamoris.Capture.Windows.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />

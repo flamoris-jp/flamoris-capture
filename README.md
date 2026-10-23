@@ -77,7 +77,7 @@ Source is [Apache-2.0](LICENSE). Windows SDK/platform APIs and NuGet dependencie
 
 ## Embedded editor observation
 
-`Flamoris.Capture.Wpf` supplies a visible, opt-in owner-window sharing control and
+`Flamoris.Capture.Wpf` supplies a visible status indicator, connection-bound window observation and
 two screenshot tools for an editor's existing MCP connection. Cutwork and 2D can
 reference it without launching the standalone EXE. See
 [ADR 0003](docs/decisions/0003-embedded-editor-observation.md).

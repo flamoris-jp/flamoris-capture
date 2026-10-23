@@ -11,33 +11,37 @@ using Microsoft.Win32;
 
 namespace Flamoris.Capture.Wpf;
 
-/// <summary>Opt-in observation of one host window through its existing MCP boundary.</summary>
+/// <summary>Observation of the host window for the lifetime of its MCP attachment.</summary>
 public sealed class EmbeddedWindowCapture : IDisposable
 {
+    private readonly object connectionGate = new();
     private readonly Window owner;
     private readonly Action revokeMcp;
-    private readonly CaptureSession session = new(new WindowCaptureBackend());
+    private readonly CaptureSession session;
     private readonly CaptureMcpHost host;
-    private readonly PrivacyNotice notice;
-    private readonly CheckBox share = new() { Content = "画面共有", VerticalAlignment = VerticalAlignment.Center, Foreground = Brushes.Gainsboro,
-        ToolTip = "このアプリの画面をAIに共有します。変更後はMCPを再接続してください。右クリックで確認メッセージを再表示できます。" };
+    private readonly Func<ICaptureTarget> selectOwner;
+    private readonly TextBlock status = new() { Text = "画面共有なし", VerticalAlignment = VerticalAlignment.Center,
+        Foreground = Brushes.Gainsboro, Padding = new Thickness(4, 1, 4, 1),
+        ToolTip = "MCP接続中はこのアプリの画面をAIが確認できます。MCPを切断すると共有も停止します。" };
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
-    private bool updating, disposed;
+    private bool disposed;
+    private int changingConnection;
+    private long connectionEpoch;
 
-    public FrameworkElement Control => share;
+    public FrameworkElement Control => status;
 
-    public EmbeddedWindowCapture(Window owner, string preferencePath, Action revokeMcp)
-    {
-        this.owner = owner; this.revokeMcp = revokeMcp;
-        notice = new(preferencePath); host = new(session);
-        var restore = new MenuItem { Header = "安全確認メッセージを再表示する" };
-        restore.Click += (_, _) =>
+    public EmbeddedWindowCapture(Window owner, Action revokeMcp)
+        : this(owner, revokeMcp, new CaptureSession(new WindowCaptureBackend()), () =>
         {
-            try { notice.SetDisplay(true); }
-            catch { MessageBox.Show(owner, "設定を保存できませんでした。", "FLAMORIS Capture"); }
-        };
-        share.ContextMenu = new ContextMenu(); share.ContextMenu.Items.Add(restore);
-        share.Checked += ChangeSharing; share.Unchecked += ChangeSharing;
+            var handle = new WindowInteropHelper(owner).Handle;
+            if (handle == 0) throw new CaptureFault("target_lost");
+            return WindowTarget.Select(new WindowChoice(handle, owner.Title));
+        }) { }
+
+    internal EmbeddedWindowCapture(Window owner, Action revokeMcp, CaptureSession session, Func<ICaptureTarget> selectOwner)
+    {
+        this.owner = owner; this.revokeMcp = revokeMcp; this.session = session; this.selectOwner = selectOwner;
+        host = new(session);
         session.Invalidating += Invalidated;
         timer.Tick += CheckTarget;
         timer.Start();
@@ -47,57 +51,77 @@ public sealed class EmbeddedWindowCapture : IDisposable
         owner.Dispatcher.ShutdownStarted += DispatcherShutdown;
     }
 
-    // These tools use the editor's guard/transport and the SAME CaptureSession.
-    // Capture performs its own final consent check before returning any pixels.
-    public IEnumerable<HostTool> Tools() => host.ScreenshotTools();
-
-    private void ChangeSharing(object sender, RoutedEventArgs e)
+    // The editor's normal connection permission includes observation of itself.
+    // The lease must be released on detach, failed connection and cancelled attach.
+    public IDisposable BeginConnection()
     {
-        if (updating || disposed) return;
-        try
+        owner.Dispatcher.VerifyAccess();
+        lock (connectionGate)
         {
-            if (share.IsChecked != true) { Stop(); return; }
-            if (!notice.Confirm(owner)) { Refresh(); return; }
-            var handle = new WindowInteropHelper(owner).Handle;
-            if (handle == 0) throw new CaptureFault("target_lost");
-            session.SelectAndAllow(WindowTarget.Select(new WindowChoice(handle, owner.Title)));
-            session.SetSharing(true);
-            Refresh();
-        }
-        catch (Exception)
-        {
-            Stop();
-            MessageBox.Show(owner, "画面共有を開始できませんでした。Windowsの画面キャプチャ機能とウィンドウの状態を確認してください。", "FLAMORIS Capture");
+            ObjectDisposedException.ThrowIf(disposed, this);
+            long epoch = ++connectionEpoch;
+            Interlocked.Increment(ref changingConnection);
+            try
+            {
+                session.SelectAndAllow(selectOwner());
+                session.SetSharing(true);
+                Refresh();
+                return new ConnectionLease(() => EndConnection(epoch));
+            }
+            catch { session.Stop(); Refresh(); throw; }
+            finally { Interlocked.Decrement(ref changingConnection); }
         }
     }
+    private void EndConnection(long epoch)
+    {
+        lock (connectionGate)
+        {
+            if (disposed || epoch != connectionEpoch) return;
+            connectionEpoch++;
+            Interlocked.Increment(ref changingConnection);
+            try { session.Stop(); }
+            finally { Interlocked.Decrement(ref changingConnection); }
+        }
+        Post(Refresh);
+    }
+    private sealed class ConnectionLease(Action stop) : IDisposable
+    {
+        private Action? stop = stop;
+        public void Dispose() => Interlocked.Exchange(ref stop, null)?.Invoke();
+    }
+
+    public IEnumerable<HostTool> Tools() => host.ScreenshotTools();
 
     private void Invalidated()
     {
-        // Revoke pixels synchronously inside Capture; marshal only UI/provider work.
-        if (owner.Dispatcher.CheckAccess()) RefreshAndRevoke();
-        else if (!owner.Dispatcher.HasShutdownStarted)
-            _ = owner.Dispatcher.BeginInvoke(new Action(RefreshAndRevoke));
+        // Normal attach/detach already belongs to the editor's connection lifecycle.
+        if (Volatile.Read(ref changingConnection) != 0) return;
+        Post(() => { if (!disposed) { revokeMcp(); Refresh(); } });
     }
-    private void RefreshAndRevoke()
+    private void Post(Action action)
     {
-        if (disposed) return;
-        revokeMcp(); Refresh();
+        if (owner.Dispatcher.CheckAccess()) action();
+        else if (!owner.Dispatcher.HasShutdownStarted)
+            _ = owner.Dispatcher.BeginInvoke(action);
     }
     private void Refresh()
     {
-        updating = true;
-        try
-        {
-            bool enabled = session.Info.SharingAllowed;
-            share.IsChecked = enabled;
-            share.Content = enabled ? "画面共有中" : "画面共有";
-            share.Background = enabled ? Brushes.Goldenrod : Brushes.Transparent;
-            share.Foreground = enabled ? Brushes.Black : Brushes.Gainsboro;
-        }
-        finally { updating = false; }
+        if (disposed) return;
+        bool enabled = session.Info.SharingAllowed;
+        status.Text = enabled ? "MCP画面共有中" : "画面共有なし";
+        status.Background = enabled ? Brushes.Goldenrod : Brushes.Transparent;
+        status.Foreground = enabled ? Brushes.Black : Brushes.Gainsboro;
     }
     private void CheckTarget(object? sender, EventArgs e) => session.CheckTarget();
-    public void Stop() { if (!disposed) session.Stop(); }
+    public void Stop()
+    {
+        lock (connectionGate)
+        {
+            if (disposed) return;
+            connectionEpoch++;
+            session.Stop();
+        }
+    }
     private void SessionSwitch(object sender, SessionSwitchEventArgs e)
     {
         if (e.Reason is SessionSwitchReason.SessionLock or SessionSwitchReason.SessionLogoff
@@ -109,15 +133,17 @@ public sealed class EmbeddedWindowCapture : IDisposable
     private void DispatcherShutdown(object? sender, EventArgs e) => Dispose();
     public void Dispose()
     {
-        if (disposed) return;
-        Stop(); disposed = true;
+        lock (connectionGate)
+        {
+            if (disposed) return;
+            Stop(); disposed = true;
+            session.Invalidating -= Invalidated;
+            session.Dispose();
+        }
         timer.Stop(); timer.Tick -= CheckTarget;
         SystemEvents.SessionSwitch -= SessionSwitch;
         SystemEvents.PowerModeChanged -= PowerModeChanged;
         owner.Closed -= OwnerClosed;
         owner.Dispatcher.ShutdownStarted -= DispatcherShutdown;
-        session.Invalidating -= Invalidated;
-        share.Checked -= ChangeSharing; share.Unchecked -= ChangeSharing;
-        session.Dispose();
     }
 }
