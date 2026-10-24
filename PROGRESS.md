@@ -20,6 +20,13 @@ This file separates **design readiness**, **source implementation**, **Windows h
 | Interaction-event trace and synchronization | Target-foreground Raw Input, physical keys/numpad/mouse, opt-in notice/badge, QPC JSON | Pure opt-in/page/queue tests | Mouse drag and Left/Space down/up confirmed; Blender/password/custom control cases pending | Development source |
 | Windows packaging and published binaries | Self-contained win-x64 publish script and CI | Windows CI publish passed (24b035e) | User rebuilt/launched updated checkout; installer/signing not accepted | No release/installer |
 
+
+## 2026-10-24 — Catalog refresh and embedded discovery
+
+The operator refreshed existing desktop catalogs from the updated applications' exports. Cutwork now advertises 11 tools and 2D 181, each including `capture.session.get` and `capture.screenshot.get`; standalone Capture remains at seven. The external client subsequently discovered the embedded tools. Existing identities, credentials and editor authority were preserved.
+
+This is catalog/discovery acceptance, not embedded pixel/lifecycle acceptance. Follow-up screenshot calls returned `frame_unavailable` for connected Cutwork and upstream-offline for 2D; no image was displayed. The cause of Cutwork's unavailable frame was not established. No new target, permission, recording or editor mutation was initiated. Keep physical image/revoke checks pending and track the focused current-scope stable review in [#6](https://github.com/flamoris-jp/flamoris-capture/issues/6).
+
 ## 2026-10-24 — Basic real-Windows / Hub observation acceptance
 
 The user and AI completed the basic workflow using the running Windows Capture app and a selected Kachinco window. Evidence is live MCP image display and sanitized response counters from this acceptance session, not synthetic CI alone. Exact app commit, Windows build and GPU/driver versions were not collected, so this does not define a platform support matrix.
