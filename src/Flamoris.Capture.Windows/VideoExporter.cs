@@ -22,6 +22,10 @@ public static class VideoExporter
         // H.264 encoders require even dimensions. Pad only the last row/column with black.
         int outputWidth = (width + 1) & ~1, outputHeight = (height + 1) & ~1;
         var raw = VideoEncodingProperties.CreateUncompressed(MediaEncodingSubtypes.Bgra8, (uint)outputWidth, (uint)outputHeight);
+        // BitmapDecoder and the padded buffer are top-down. Without an explicit
+        // MF_MT_DEFAULT_STRIDE, Media Foundation can interpret system-memory RGB as bottom-up.
+        // Positive stride declares top-down rows; include the padded output column.
+        raw.Properties[new Guid("644b4e48-1e02-4516-b0eb-c01ca9d49ac6")] = checked((uint)outputWidth * 4);
         raw.FrameRate.Numerator = ObservationWorkspace.Fps; raw.FrameRate.Denominator = 1;
         var source = new MediaStreamSource(new VideoStreamDescriptor(raw)) { BufferTime = TimeSpan.Zero, IsLive = false, CanSeek = false };
         var profile = MediaEncodingProfile.CreateMp4(VideoEncodingQuality.HD720p);
