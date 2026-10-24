@@ -16,6 +16,10 @@
 
 The basic user-requested observation test is complete. Exact app commit, Windows build, GPU/driver and full display configuration were not collected. Counts and timestamps above are sanitized session evidence; raw images, input text, identifiers and private host details are intentionally omitted.
 
+## 2026-10-24 — Embedded catalog follow-up
+
+The existing Hub catalogs were refreshed to Cutwork 11 / 2D 181 tools, and the external client discovered both embedded Capture tools. Follow-up screenshot attempts returned `frame_unavailable` for connected Cutwork and upstream-offline for 2D; no image was displayed and the unavailable-frame cause was not established. Catalog/discovery is accepted, while physical image/revoke acceptance stays pending. See [progress](../PROGRESS.md) and the focused [stable-scope review #6](https://github.com/flamoris-jp/flamoris-capture/issues/6).
+
 ## Environment to record
 
 Date, exact app commit, Windows build, SDK/runtime, GPU/driver, monitor resolutions/origins and 100/150/200% DPI. Use a synthetic test window and at least one ordinary non-FLAMORIS application. Capture APIs start at build 19041; no OS/GPU matrix has yet been accepted.
