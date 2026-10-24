@@ -26,7 +26,7 @@ This file separates **design readiness**, **source implementation**, **Windows h
 - A user-saved MP4 decoded successfully but its entire image was vertically flipped. Local MP4 orientation acceptance therefore failed; the earlier single-color synthetic test only established encode/decode availability.
 - The exporter now declares a positive `MF_MT_DEFAULT_STRIDE` for its top-down BGRA buffer, using the padded output width. Capture, retained JPEGs and existing saved files are unchanged.
 - The Windows platform round-trip test uses distinct red/green/blue/yellow quadrants and checks decoded colors/positions and output dimensions for odd (65×49) and even (96×64) inputs.
-- Windows CI validation is pending at this source checkpoint. Rebuilding and checking a newly saved real-window MP4 remains a separate physical acceptance step; see [Windows acceptance](docs/WINDOWS-ACCEPTANCE.md).
+- Regression proof: [Windows CI before the fix](https://github.com/flamoris-jp/flamoris-capture/actions/runs/40093971721) at `ce8a86b` built successfully but failed both quadrant checks. [Windows CI with the fix](https://github.com/flamoris-jp/flamoris-capture/actions/runs/40094095740) at `454e28f` passed build/publish, Core/MCP/bridge tests and the platform MP4 tests (including both quadrant cases). Rebuilding and checking a newly saved real-window MP4 remains a separate physical acceptance step; see [Windows acceptance](docs/WINDOWS-ACCEPTANCE.md).
 
 ## 2026-10-24 — Catalog refresh and embedded discovery
 
