@@ -12,7 +12,22 @@
 | Mouse events and corresponding frames | 172 events, droppedEvents=0; left down 12,530.6356 ms, up 14,535.581 ms; before/after playhead positions changed | Drag observation confirmed; synchronization drift not measured |
 | Physical keyboard events | 130-event sample, droppedEvents=0; Left ×3 and Space ×3, each down/up | Confirmed for focused Kachinco timeline; Blender/numpad/modifiers still pending |
 | Text-entry trial | Earlier trace had no key events; source suppresses recognized editable/text/password controls | Consistent with suppression, but focused control was not instrumented; no password-detection acceptance |
-| Local MP4/JSON save, local playback/scrub | Not exercised in this session | Pending; synthetic CI encode/decode evidence is separate |
+| Local MP4 save | A later user-saved H.264 MP4 decoded successfully but the whole image was vertically flipped (2026-10-24) | Orientation regression reported; fixed-source physical recheck pending. JSON and local playback/scrub remain pending |
+
+### MP4 orientation regression (2026-10-24)
+
+The submitted MP4 showed upside-down row order with left/right positions preserved.
+The exporter supplied top-down BGRA bytes without declaring the input stride to
+Media Foundation. The fix explicitly sets a positive `MF_MT_DEFAULT_STRIDE`,
+including the even-width padding, so the encoder receives the intended row order.
+The platform round-trip test now decodes four distinct color quadrants for both
+odd and even source dimensions; the previous solid-color fixture could not detect a flip.
+Automated results are recorded separately in [PROGRESS](../PROGRESS.md).
+
+Physical recheck: rebuild Capture, record a window with different text/markers at
+the top and bottom, save MP4 and open it in an independent player. Confirm readable
+text and matching top/bottom and left/right positions. Previously saved MP4s are
+not modified by this source fix. No private capture is committed to the repository.
 
 The basic user-requested observation test is complete. Exact app commit, Windows build, GPU/driver and full display configuration were not collected. Counts and timestamps above are sanitized session evidence; raw images, input text, identifiers and private host details are intentionally omitted.
 
