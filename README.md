@@ -6,6 +6,8 @@ A Windows screen-observation toolkit for people and AI: a reusable capture DLL, 
 
 **Status: 0.2.0 development preview source.** One approved window, direct MCP screenshots, bounded recording, selective frame observation and opt-in interaction recording are implemented. The basic real-Windows workflow was confirmed on 2026-10-24: MCP screenshots, recording, selective frames/contact sheets and mouse/key events. Broader platform/lifecycle acceptance remains separate; no stable release/installer is claimed. See [PROGRESS.md](PROGRESS.md).
 
+The current one-window scope is being reviewed for a stable milestone in [#6](https://github.com/flamoris-jp/flamoris-capture/issues/6). Basic workflow acceptance, remaining revoke/save/platform checks, repository status and binary releases are tracked separately; planned rectangle/monitor features are not prerequisites for that scoped review.
+
 ## What works
 
 - Compact toolbar and large preview; the human chooses one window. **画面共有** gates all live pixel acquisition, recording and MCP images. Both checkboxes start OFF at restart.
