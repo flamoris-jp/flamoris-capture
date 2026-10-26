@@ -1,4 +1,4 @@
-<Window x:Class="Flamoris.Capture.App.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="FLAMORIS Capture" Width="1100" Height="740" MinWidth="780" MinHeight="500">
+<Window x:Class="Flamoris.Capture.App.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="FLAMORIS Capture" Width="1100" Height="740" MinWidth="780" MinHeight="500" Icon="Assets/Capture.ico">
   <DockPanel>
     <Menu DockPanel.Dock="Top">
       <MenuItem x:Name="McpMenu" Header="MCP / AI" />
