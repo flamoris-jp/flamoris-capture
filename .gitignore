@@ -35,6 +35,7 @@ artifacts/
 *.user
 *.suo
 *.png
+!src/Flamoris.Capture.App/Assets/*.png
 *.jpg
 *.jpeg
 *.mp4
