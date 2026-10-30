@@ -1,5 +1,7 @@
 # ADR 0001: One-window screenshot MVP
 
+> The startup, MCP grant and sharing-consent clauses below are superseded by [ADR 0004](0004-application-mcp-lifetime.md). Current Core/Wpf/bridge is 1.4.0. Historical versions and acceptance evidence below describe the original decision, not the current connection procedure.
+
 Accepted for source implementation, 2026-10-22. Windows hands-on acceptance and release remain separate gates.
 
 Superseded in part by [ADR 0002](0002-simple-observation-recording.md): current screen gate, optional IDs, recording and interaction controls. This file records the earlier screenshot-only decision.

@@ -1,5 +1,7 @@
 # ADR 0003: Embedded editor observation
 
+> The startup, MCP grant and sharing-consent clauses below are superseded by [ADR 0004](0004-application-mcp-lifetime.md). Current Core/Wpf/bridge is 1.4.0. Historical versions and acceptance evidence below describe the original decision, not the current connection procedure.
+
 Accepted for implementation, 2026-10-24.
 
 Cutwork and 2D need to inspect their actual WPF window, including panels, selection

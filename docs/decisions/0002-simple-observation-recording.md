@@ -1,5 +1,7 @@
 # ADR 0002: Human-selected current window, bounded recording and physical operation trace
 
+> The startup, MCP grant and sharing-consent clauses below are superseded by [ADR 0004](0004-application-mcp-lifetime.md). Current Core/Wpf/bridge is 1.4.0. Historical versions and acceptance evidence below describe the original decision, not the current connection procedure.
+
 2026-10-23. Development preview source, superseding the ID requirement and screenshot-only UI in ADR 0001. Physical Windows acceptance is separate.
 
 ## User workflow and authority

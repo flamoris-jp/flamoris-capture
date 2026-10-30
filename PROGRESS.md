@@ -1,6 +1,8 @@
 # FLAMORIS Capture Progress
 
-**Updated:** 2026-10-24
+> Current lifetime update (2026-10-30): [ADR 0004](docs/decisions/0004-application-mcp-lifetime.md) supersedes earlier connection/share coupling. Core/Wpf/bridge 1.4.0 is published; Capture #12 is merged and Windows CI passed. The user reports rebuilding and launching all updated desktop apps. This confirms build/startup, not the full physical WGC/revoke/DPI matrix. Dated evidence below retains its original versions and outcomes.
+
+**Updated:** 2026-10-30
 **Project status:** 0.2.0 current-window observation, bounded recording and operation trace source; basic Windows/MCP workflow accepted; broader platform/lifecycle acceptance and release pending
 **Repository:** [flamoris-jp/flamoris-capture](https://github.com/flamoris-jp/flamoris-capture)
 
@@ -13,7 +15,7 @@ This file separates **design readiness**, **source implementation**, **Windows h
 | Product scope, README and initial documentation | ✅ documented | Documentation review only | Not applicable | Not applicable |
 | Screenshot capture DLL | Implemented: WGC, bounded PNG/JPEG/ROI | Full Windows-target cross-build passed; image-policy tests passed | User screenshot confirms Cutwork one-shot preview; remaining cases pending | Not released |
 | Standalone EXE and target selection | Implemented: local selection, consent, preview, Stop | WPF cross-build passed | User screenshot confirms target selection/local preview; remaining cases pending | Not released |
-| MCP grants and image results | Implemented: six typed queries, optional IDs, shared Core/Wpf 1.3.1 | Adapter/contracts and actual bridge Windows CI passed (24b035e) | Real Hub-to-client screenshot displayed without session ID (2026-10-24); remaining grant/revoke cases pending | Not released |
+| MCP grants and image results | Implemented: six typed queries, optional IDs, shared Core/Wpf 1.4.0 | Adapter/contracts and actual bridge Windows CI passed (24b035e) | Real Hub-to-client screenshot displayed without session ID (2026-10-24); remaining grant/revoke cases pending | Not released |
 | Window / rectangle / monitor coverage | Window source only; rectangle/monitor not implemented | Source checks only | Selected-window capture confirmed; rectangle/monitor unimplemented | Not released |
 | Short video, indexed observation, cleanup | Bounded 10fps JPEG sequence, local playback/scrub, silent H.264 MP4 export, normal-exit cleanup | Cross-build/pure recording tests; Windows synthetic H.264 encode/decode passed (8cb0f44) | Real start/stop and frame retention confirmed; local MP4/JSON export, playback and cleanup not reverified | Development source |
 | Metadata-first video observation, frame selection, contact sheets | Summary, latest/index/time frame and 1–9 cell sheet | Contract/revoke tests; Windows platform sheet passed (8cb0f44) | Real summary, six-cell sheet and time-selected images displayed (2026-10-24) | Development source |

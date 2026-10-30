@@ -16,7 +16,7 @@
 
 ## M1: Window screenshot (first useful slice)
 
-- [ ] Application starts with capture and MCP disclosure OFF.
+- [ ] Application starts with capture/content sharing OFF. New settings enable local read-only MCP before target selection; saved auto-connect OFF remains OFF. Safe status/discovery works without content consent.
 - [ ] User selects exactly one Window and explicitly permits capture.
 - [x] A real selected-window JPEG is decodable/displayable in the MCP client (2026-10-24). Exact-size/ROI mapping and broader isolation cases remain unchecked separately.
 - [ ] Exact target identity and frame timing metadata survive through MCP; bounded image contract respects current MCP Core limits.
@@ -52,7 +52,7 @@ Contract and proposed numeric budgets: [基本設計 v0.1](BASIC-DESIGN.md). The
 - [ ] Resize/segment transitions preserve recording time and geometry. ROI bounds are rechecked; cross-geometry comparison returns incomparable_geometry. A failed item appears as a marked placeholder in a partial contact sheet.
 - [ ] At most 12 selected items and one image result; encoded image <=1 MiB, full wire response within Core/client limits, metadata <=64 KiB. Oversized requests fail before expensive allocation. PNG remains lossless, actual dimensions/quality are reported, exact-size requests are not silently shrunk.
 - [ ] Decode deadline, busy, corrupt/truncated recording, unavailable codec and finalization failure produce truthful errors. Only ready recordings allow frame queries; failed data never becomes a playable/verified asset.
-- [ ] Normal stop allows authorized post-record observation; cancel/discard prevents it. Sharing revoke, target replacement, OS lock and TTL block **all** reads, including cached images, selections, events and metadata. Exercise revoke during decode and immediately before return.
+- [ ] Normal stop allows authorized post-record observation; cancel/discard prevents it. For the current implementation, screen/operation withdrawal blocks the corresponding content and retained recording metadata; safe `mcp.context`/session status remains available and MCP stays connected. Target replacement and OS lock invalidate the old content session. TTL is a roadmap check, not an implemented guarantee. Exercise revoke during decode and immediately before return.
 - [ ] Storage caps include video/index/events/finalization files; GPU surfaces and peak process memory are measured before selecting a supported operating envelope. Event overflow reports partial/gaps, and no unbounded queue or cache remains.
 - [ ] Event selectors preserve before/at/after requests, report boundary misses, and quantify clock uncertainty; not_recorded differs from zero recorded events.
 - [ ] Same-geometry RGB comparison reports configured threshold and metrics; cursor/animation/compression changes are not labelled anomalies. Change candidates, if implemented later, are labelled heuristic and include algorithm parameters.

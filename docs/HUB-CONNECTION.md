@@ -4,7 +4,7 @@ Capture remains the authority for target selection, consent and pixels. The Hub 
 
 ## Catalog
 
-`config/hub-capture.example.json` is generated from the actual Capture adapter and MCP Core 1.3.1 `DescribeCatalog()` output. JSON is also valid YAML. `HubCatalogTests` checks the pinned schemas and descriptions against the real producer on every build. Read-only annotations are added explicitly.
+`config/hub-capture.example.json` is generated from the actual Capture adapter and MCP Core 1.4.0 `DescribeCatalog()` output. JSON is also valid YAML. `HubCatalogTests` checks the pinned schemas and descriptions against the real producer on every build. Read-only annotations are added explicitly.
 
 Copy the reviewed file into the deployment's MCP catalog directory as `capture.yaml`. Its identity is `capture`, product `flamoris.capture`, transport `reverse-websocket`, credential reference `CAPTURE_CONNECTOR_TOKEN`. The actual secret must stay outside the catalog/source control.
 
@@ -64,16 +64,17 @@ After a successful reload, retry **MCP / AI → 接続** in Capture. Do not reru
 
 Capture currently accepts only Read only. The shared connection dialog also offers Edit for other products; selecting Edit in Capture is rejected locally **before any Hub connection**. Set Read only in settings and again in the connection confirmation. An existing credential entry does not override the selected permission. Updated Capture previews explain this explicitly.
 
-Changing the sharing checkbox invalidates the old MCP grant/session, and live acquisition/recording stops immediately; the live preview is cleared. Operation recording retains its independent consent. Selecting another target, stopping, target loss or OS lock clears it.
+Turning sharing OFF invalidates old content authority while preserving the MCP connection, and live acquisition/recording stops immediately; the live preview is cleared. Operation recording retains its independent consent. Selecting another target, stopping, target loss or OS lock clears it.
 
 ## Human desktop steps after registration
 
 1. In Capture, open **MCP / AI → 設定…**.
 2. Choose **FLAMORIS MCP Hub**, **読み取り専用**, and the WSS endpoint printed by the launcher.
 3. Paste the clipboard credential into the password field and Save. The shared subsystem stores it in the current user's Windows Credential Manager. Do not paste it into chat/Issues/screenshots.
-4. Select/allow the desired window, enable **画面共有** (or **操作記録** for event-only observation), then **MCP / AI → 接続… → 読み取り専用 → 接続**.
-5. Confirm the green connection indicator. Refresh ChatGPT's Hub tool catalog if needed; call `capture.capture.screenshot.get` with `{"input":{}}`. No session ID lookup is needed.
-6. Confirm a real MCP image is displayed, then test sharing revoke and old-session refusal. Registration/green connection alone does not prove physical-image disclosure or revoke acceptance.
+4. Use **MCP / AI → 接続… → 読み取り専用 → 接続** before selecting a target or enabling sharing. Enable **起動時に自動接続** to reuse these provider settings on restart; saved OFF remains OFF. Confirm `mcp.context` / safe session status with sharing OFF.
+5. Select/allow the desired window and explicitly enable **画面共有** (or **操作記録** for event-only observation). Connection alone grants neither.
+6. Confirm the green connection indicator. Refresh ChatGPT's Hub tool catalog if needed; call `capture.capture.screenshot.get` with `{"input":{}}`. No session ID lookup is needed.
+7. Confirm a real MCP image is displayed, then test sharing revoke and old-session refusal. Registration/green connection alone does not prove physical-image disclosure or revoke acceptance.
 
 Capture does not resume sharing after restart, target replacement or OS lock. Registration does not change that consent policy. Recording and opt-in target-filtered input events are available; monitor/rectangle targets remain unavailable.
 
