@@ -36,6 +36,21 @@ public sealed class CaptureTests
         var host = new CaptureMcpHost(session);
         return new(host, host.Tools(), new() { ApplicationLifetime = true }, new McpDiagnostics(FlamorisLogger.Create()));
     }
+    [Fact] public async Task EmptyStartupStatusWorksAndSharingDoesNotRotateConnection()
+    {
+        using var session = new CaptureSession(new Backend());
+        using var boundary = Boundary(session); using var grant = await boundary.EnableAsync(McpPermission.ReadOnly);
+        string credential = grant.ExportCredential();
+        var empty = JsonSerializer.SerializeToElement(new { });
+        Assert.False((await boundary.InvokeAsync(grant, "capture.session.get", empty, null)).IsError);
+        Assert.True((await boundary.InvokeAsync(grant, "capture.screenshot.get", empty, null)).IsError);
+        session.SelectAndAllow(new Target()); session.SetSharing(true);
+        Assert.False((await boundary.InvokeAsync(grant, "capture.screenshot.get", empty, null)).IsError);
+        session.SetSharing(false);
+        Assert.True(grant.Authenticate(credential));
+        Assert.False((await boundary.InvokeAsync(grant, "capture.session.get", empty, null)).IsError);
+        Assert.Equal("forbidden", (await boundary.InvokeAsync(grant, "capture.screenshot.get", empty, null)).Error);
+    }
     private static ScreenshotRequest Request(CaptureSession s) => new() { SessionId = s.Info.SessionId };
     private static JsonElement Input(CaptureSession s) => JsonSerializer.SerializeToElement(new { sessionId = s.Info.SessionId });
     [Fact] public async Task StartsOffAndScreenCheckboxGatesBothLocalAndMcp()

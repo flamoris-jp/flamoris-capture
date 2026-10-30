@@ -86,7 +86,8 @@ public sealed class ObservationTests
     [Fact] public void EventRecordingIsOptInIndependentAndBounded()
     {
         using var session = Session();
-        session.Observation.AddEvent("keyDown", "G"); Assert.Empty(session.Observation.Events().Events);
+        session.Observation.AddEvent("keyDown", "G");
+        Assert.Throws<CaptureFault>(() => session.Observation.Events());
         session.Observation.SetOperations(true);
         session.Observation.AddEvent("keyDown", "NumPad1"); session.Observation.AddEvent("keyUp", "NumPad1");
         var page = session.Observation.Events(limit: 1);
