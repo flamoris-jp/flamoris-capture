@@ -13,7 +13,7 @@ public sealed class ObservationTests
     private static McpBoundary Boundary(CaptureSession session, IContactSheetRenderer? renderer = null)
     {
         var host = new CaptureMcpHost(session, renderer);
-        return new(host, host.Tools(), new(), new McpDiagnostics(FlamorisLogger.Create()));
+        return new(host, host.Tools(), new() { ApplicationLifetime = true }, new McpDiagnostics(FlamorisLogger.Create()));
     }
     private static CaptureSession Session()
     {

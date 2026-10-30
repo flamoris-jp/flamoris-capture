@@ -41,7 +41,7 @@ See [Setup](docs/SETUP.md) for the DLL contract and request examples, [Hub conne
 ## Usage
 
 1. Choose a window and click **対象にする**. This binds a target without acquiring pixels.
-2. Enable **画面共有**, acknowledge the notice, then connect **MCP / AI → 接続 → 読み取り専用**. The preview updates only while enabled. AI can now request the currently shared window without knowing an internal ID.
+2. Connect **MCP / AI → 接続 → 読み取り専用** independently of a target, then select a window and enable **画面共有**, acknowledging the notice. The preview updates only while enabled. AI can now request the currently shared window without knowing an internal ID.
 3. Optionally enable **操作記録**. It works with screen sharing OFF too; connect MCP after enabling the desired capabilities. Recognized text-entry controls are excluded. Other foreground applications are excluded.
 4. For video, enable screen sharing and click **録画開始**. **録画停止** finishes frame acquisition; **録画を見る**, the slider and **再生** inspect it. **MP4を保存** exports a silent video; **操作履歴を保存** exports synchronized JSON. A new recording replaces the previous temporary recording and starts a fresh frame/event timeline.
 5. Screen sharing OFF immediately cancels live pixel acquisition/recording, clears the live preview and revokes the old MCP grant. Operation recording has its own OFF switch. **すべて停止** also clears the target and stops both. Restart/target loss/OS lock never resumes acquisition automatically.
@@ -83,3 +83,8 @@ Source is [Apache-2.0](LICENSE). Windows SDK/platform APIs and NuGet dependencie
 two screenshot tools for an editor's existing MCP connection. Cutwork and 2D can
 reference it without launching the standalone EXE. See
 [ADR 0003](docs/decisions/0003-embedded-editor-observation.md).
+
+
+## MCP startup and sharing
+
+See [startup/consent behavior and Windows acceptance](docs/mcp-startup.md). MCP can connect at application startup before opening a file; connection alone never enables screen sharing. Document changes preserve the connection and invalidate old target guards.

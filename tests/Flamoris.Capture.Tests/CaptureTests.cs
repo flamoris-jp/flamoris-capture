@@ -34,7 +34,7 @@ public sealed class CaptureTests
     private static McpBoundary Boundary(CaptureSession session)
     {
         var host = new CaptureMcpHost(session);
-        return new(host, host.Tools(), new(), new McpDiagnostics(FlamorisLogger.Create()));
+        return new(host, host.Tools(), new() { ApplicationLifetime = true }, new McpDiagnostics(FlamorisLogger.Create()));
     }
     private static ScreenshotRequest Request(CaptureSession s) => new() { SessionId = s.Info.SessionId };
     private static JsonElement Input(CaptureSession s) => JsonSerializer.SerializeToElement(new { sessionId = s.Info.SessionId });
@@ -66,13 +66,13 @@ public sealed class CaptureTests
         var metadata = await b.InvokeAsync(g, "capture.session.get", Input(s), null);
         Assert.False(metadata.IsError); Assert.Null(metadata.Image);
     }
-    [Fact] public async Task TargetReplacementAndSharingRevokeInvalidateGrantAndOldSession()
+    [Fact] public async Task TargetReplacementAndSharingRevokeContentWithoutDisconnecting()
     {
         using var s = new CaptureSession(new Backend()); s.SelectAndAllow(new Target()); s.SetSharing(true);
         using var b = Boundary(s); using var g = await b.EnableAsync(McpPermission.ReadOnly);
         var old = Request(s); s.SetSharing(false);
-        Assert.False(g.IsActive); Assert.True(s.Info.CaptureAllowed);
-        Assert.Equal("unauthorized", (await b.InvokeAsync(g, "capture.screenshot.get", Input(s), null)).Error);
+        Assert.True(g.IsActive); Assert.True(s.Info.CaptureAllowed);
+        Assert.Equal("forbidden", (await b.InvokeAsync(g, "capture.screenshot.get", Input(s), null)).Error);
         Assert.Equal("stale_session", (await Assert.ThrowsAsync<CaptureFault>(() => s.CaptureAsync(old, false))).Code);
         s.SelectAndAllow(new Target()); Assert.False(s.Info.SharingAllowed);
     }
@@ -92,7 +92,7 @@ public sealed class CaptureTests
     {
         var target = new Target(); using var s = new CaptureSession(new Backend());
         s.SelectAndAllow(target); s.SetSharing(true); using var b = Boundary(s); using var g = await b.EnableAsync(McpPermission.ReadOnly);
-        target.Lose(); Assert.False(s.Info.CaptureAllowed); Assert.False(g.IsActive);
+        target.Lose(); Assert.False(s.Info.CaptureAllowed); Assert.True(g.IsActive);
         Assert.Null(s.Info.TargetId);
     }
     [Theory]
