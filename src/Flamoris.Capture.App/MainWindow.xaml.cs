@@ -35,7 +35,7 @@ public partial class MainWindow : Window
         string settings = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FLAMORIS", "Capture", "mcp-settings.json");
         mcp = new(this, McpMenu, "flamoris.capture", settings, "FLAMORIS/Capture",
             Path.Combine(AppContext.BaseDirectory, "Flamoris.Capture.Bridge.exe"), Attach,
-            () => session.Info.CaptureAllowed && (session.Info.SharingAllowed || session.Observation.IsRecordingOperations));
+            () => !closing);
         McpIndicator.Content = mcp.StatusIndicator;
         ShowNoticeSetting.IsChecked = !notice.Suppress;
         session.Invalidating += SessionInvalidated;
@@ -90,7 +90,7 @@ public partial class MainWindow : Window
             MessageBox.Show(this, "Captureは読み取り専用で接続します。\n接続確認画面で「読み取り専用」を選択してください。", "FLAMORIS Capture");
             throw new McpFault(McpErrors.Forbidden);
         }
-        var boundary = new McpBoundary(host, host.Tools(), new McpOptions { RequestTimeoutMs = 5000, MaxConcurrentRequests = 1 }, new McpDiagnostics(FlamorisLogger.Create()));
+        var boundary = new McpBoundary(host, host.Tools(), new McpOptions { ApplicationLifetime = true, RequestTimeoutMs = 5000, MaxConcurrentRequests = 1 }, new McpDiagnostics(FlamorisLogger.Create()));
         try { return new(boundary, await boundary.EnableAsync(McpPermission.ReadOnly)); }
         catch { boundary.Dispose(); throw; }
     }
@@ -107,7 +107,7 @@ public partial class MainWindow : Window
             Operations.IsChecked = session.Observation.IsRecordingOperations;
             updatingControls = false;
             if (!session.Observation.IsRecordingOperations) input?.Stop();
-            mcp.Invalidate(); UpdateStatus();
+            UpdateStatus();
         }));
     }
     private void SessionSwitch(object sender, SessionSwitchEventArgs e)

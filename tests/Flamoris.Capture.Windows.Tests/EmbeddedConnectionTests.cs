@@ -32,30 +32,34 @@ public sealed class EmbeddedConnectionTests
     }
 
     [Fact]
-    public Task McpAttachmentOwnsSharingWithoutExtraUiAndNormalDetachDoesNotReconnect() => Sta(() =>
+    public Task McpAttachmentAndScreenConsentAreIndependent() => Sta(() =>
     {
-        var session = new CaptureSession(new Backend()); int selected = 0, revoked = 0;
-        using var capture = new EmbeddedWindowCapture(new Window(), () => revoked++, session, () => { selected++; return new Target(); });
+        var session = new CaptureSession(new Backend()); int selected = 0;
+        using var capture = new EmbeddedWindowCapture(new Window(), session, () => { selected++; return new Target(); });
         Assert.False(session.Info.SharingAllowed); Assert.Equal(0, selected);
-        Assert.IsNotType<System.Windows.Controls.CheckBox>(capture.Control);
+        Assert.IsType<System.Windows.Controls.CheckBox>(capture.Control);
         using var connection = capture.BeginConnection();
-        Assert.True(session.Info.SharingAllowed); Assert.Equal(1, selected); Assert.Equal(0, revoked);
+        Assert.False(session.Info.SharingAllowed); Assert.Equal(0, selected);
+        capture.SetSharing(true);
+        Assert.True(session.Info.SharingAllowed); Assert.Equal(1, selected);
         Assert.Single(session.CaptureAsync(new(), true).GetAwaiter().GetResult().Image.Bytes);
         // StopHost cleanup can run off the dispatcher after provider disposal.
         Task.Run(connection.Dispose).GetAwaiter().GetResult();
-        Assert.False(session.Info.SharingAllowed); Assert.Equal(0, revoked);
+        Assert.False(session.Info.SharingAllowed);
     });
 
     [Fact]
-    public Task StaleLeaseCannotStopNewAttachmentAndExternalStopRevokesIt() => Sta(() =>
+    public Task StaleLeaseCannotStopNewAttachmentAndSharingStopKeepsConnection() => Sta(() =>
     {
-        var session = new CaptureSession(new Backend()); int revoked = 0;
-        using var capture = new EmbeddedWindowCapture(new Window(), () => revoked++, session, () => new Target());
+        var session = new CaptureSession(new Backend());
+        using var capture = new EmbeddedWindowCapture(new Window(), session, () => new Target());
         using var old = capture.BeginConnection();
         using var current = capture.BeginConnection();
-        old.Dispose(); Assert.True(session.Info.SharingAllowed); Assert.Equal(0, revoked);
-        capture.Stop(); Assert.False(session.Info.SharingAllowed); Assert.Equal(1, revoked);
-        current.Dispose(); Assert.Equal(1, revoked);
+        capture.SetSharing(true);
+        old.Dispose(); Assert.True(session.Info.SharingAllowed);
+        capture.Stop(); Assert.False(session.Info.SharingAllowed);
+        Assert.True(capture.Control.IsEnabled);
+        current.Dispose();
     });
 
     [Fact]
@@ -65,15 +69,17 @@ public sealed class EmbeddedConnectionTests
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var backend = new Backend { Wait = () => { entered.SetResult(); return release.Task; } };
         var session = new CaptureSession(backend); bool fail = false;
-        using var capture = new EmbeddedWindowCapture(new Window(), () => { }, session,
+        using var capture = new EmbeddedWindowCapture(new Window(), session,
             () => fail ? throw new CaptureFault("target_lost") : new Target());
         using var connection = capture.BeginConnection();
+        capture.SetSharing(true);
         var shot = session.CaptureAsync(new(), true);
         entered.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
         connection.Dispose(); release.SetResult();
         Assert.Throws<CaptureFault>(() => shot.GetAwaiter().GetResult());
         fail = true;
-        Assert.Throws<CaptureFault>(() => capture.BeginConnection());
+        using var retry = capture.BeginConnection();
+        Assert.Throws<CaptureFault>(() => capture.SetSharing(true));
         Assert.False(session.Info.SharingAllowed);
     });
 }

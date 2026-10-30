@@ -31,6 +31,8 @@ public sealed class ObservationWorkspace : IDisposable
     private long origin, recordingOrigin, bytes, sequence, dropped;
     private double duration;
     private bool operations, disposed;
+    private long operationEpoch;
+    public long OperationEpoch => session.Invoke(() => operationEpoch);
     private string? reason;
     public ObservationWorkspace(CaptureSession session)
     { this.session = session; session.Invalidating += Invalidating; session.TargetResetting += TargetResetting; }
@@ -39,7 +41,7 @@ public sealed class ObservationWorkspace : IDisposable
         // Called synchronously on the authority lane, before a revoked request can disclose.
         acquisition?.Cancel(); ownerSession = null;
     }
-    private void TargetResetting() { operations = false; events.Clear(); }
+    private void TargetResetting() { operationEpoch++; operations = false; events.Clear(); }
     private double NowMs => Math.Max(0, (ObservationClock.Ticks - origin) / (double)TimeSpan.TicksPerMillisecond);
     private void Demand() => session.Demand(ownerSession ?? "", true);
     public bool IsRecording => session.Invoke(() => worker is { IsCompleted: false });
@@ -115,6 +117,7 @@ public sealed class ObservationWorkspace : IDisposable
             if (frames.Count == 0 || ownerSession != info.SessionId) origin = ObservationClock.Ticks;
         }
         if (operations && !enabled) duration = Math.Max(duration, NowMs);
+        if (operations != enabled) operationEpoch++;
         operations = enabled;
         return true;
     });
@@ -131,6 +134,7 @@ public sealed class ObservationWorkspace : IDisposable
     public EventPage Events(long afterSequence = 0, int limit = 100) => session.Invoke(() =>
     {
         session.ResolveSession(requireScreen: false);
+        if (!operations) throw new CaptureFault("forbidden");
         if (afterSequence < 0 || limit is < 1 or > 500) throw new CaptureFault("invalid_request");
         var page = events.Where(e => e.Sequence > afterSequence).Take(limit).ToArray();
         return new EventPage(page, page.Length == 0 ? afterSequence : page[^1].Sequence, dropped, origin);

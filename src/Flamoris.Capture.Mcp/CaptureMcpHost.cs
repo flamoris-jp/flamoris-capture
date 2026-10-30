@@ -11,9 +11,10 @@ public sealed class CaptureMcpHost(CaptureSession session, IContactSheetRenderer
     public HostSnapshot Snapshot
     {
         get { var s = session.Info; return new("flamoris.capture", "0.2.0", runtimeId, s.SessionId,
-            s.PermissionEpoch, s.CaptureAllowed && (s.SharingAllowed || session.Observation.IsRecordingOperations)); }
+            s.PermissionEpoch, !session.IsDisposed) { HasDocument = false }; }
     }
-    public event Action? Invalidating { add => session.Invalidating += value; remove => session.Invalidating -= value; }
+    // Content revocation belongs to CaptureSession; callers revoke the transport on app shutdown.
+    public event Action? Invalidating { add { } remove { } }
     public Task<T> InvokeAsync<T>(Func<T> action, CancellationToken token) => Task.FromResult(session.Invoke(action, token));
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     { UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow, PropertyNameCaseInsensitive = false };
@@ -51,14 +52,15 @@ public sealed class CaptureMcpHost(CaptureSession session, IContactSheetRenderer
         yield return new HostTool<SessionRequest>("capture.session.get", "Read the currently approved window and limits. No sessionId needed; no pixels or window enumeration.",
             Schema(false), OperationKind.Query, Decode<SessionRequest>, async (ctx, request, _) =>
             {
-                try { return await ctx.ReadAsync(() => { session.ResolveSession(request.SessionId, false); return JsonSerializer.SerializeToElement(session.Info, Json); }); }
+                try { return await ctx.ReadAsync(() => { return JsonSerializer.SerializeToElement(session.Status(request.SessionId), Json); }); }
                 catch (CaptureFault e) { throw new McpFault(e.Code); }
-            }, foreground: false);
+            }, foreground: false) { RequiresDocument = false };
         yield return new HostImageTool<ScreenshotRequest>("capture.screenshot.get", "Capture the currently shared window. No sessionId needed; no target switching. PNG/JPEG <= 1 MiB.",
             Schema(true), Decode<ScreenshotRequest>, async (ctx, request, token) =>
             {
                 try
                 {
+                    await BindContent(ctx, request.SessionId, true);
                     string expected = "";
                     await ctx.ReadAsync(() => { expected = session.ResolveSession(request.SessionId); return JsonSerializer.SerializeToElement(true); });
                     request = request with { SessionId = expected };
@@ -71,26 +73,27 @@ public sealed class CaptureMcpHost(CaptureSession session, IContactSheetRenderer
                     }, token);
                 }
                 catch (CaptureFault e) { throw new McpFault(e.Code); }
-            });
+            }) { RequiresDocument = false };
 
         yield return new HostTool<SessionRequest>("capture.recording.get", "Read the current recording summary and bounded resource counters. Acquisition is controlled by the human UI.",
             Schema(false), OperationKind.Query, Decode<SessionRequest>, async (ctx, request, _) =>
             {
-                try { return await ctx.ReadAsync(() => { session.ResolveSession(request.SessionId, false); return JsonSerializer.SerializeToElement(session.Observation.Summary(), Json); }); }
+                try { await BindContent(ctx, request.SessionId, false); return await ctx.ReadAsync(() => { session.ResolveSession(request.SessionId, false); return JsonSerializer.SerializeToElement(session.Observation.Summary(), Json); }); }
                 catch (CaptureFault e) { throw new McpFault(e.Code); }
-            }, foreground: false);
+            }, foreground: false) { RequiresDocument = false };
         yield return new HostTool<EventsRequest>("capture.events.get", "Read a page of recorded target-window key and mouse events, relative to the recording QPC time origin. Never starts recording.",
             ExtraSchema(new { afterSequence = new { type = "integer", minimum = 0, @default = 0 }, limit = new { type = "integer", minimum = 1, maximum = 500, @default = 100 } }),
             OperationKind.Query, Decode<EventsRequest>, async (ctx, request, _) =>
             {
-                try { return await ctx.ReadAsync(() => { session.ResolveSession(request.SessionId, false); return JsonSerializer.SerializeToElement(session.Observation.Events(request.AfterSequence, request.Limit), Json); }); }
+                try { await BindContent(ctx, request.SessionId, false, operations: true); return await ctx.ReadAsync(() => { session.ResolveSession(request.SessionId, false); return JsonSerializer.SerializeToElement(session.Observation.Events(request.AfterSequence, request.Limit), Json); }); }
                 catch (CaptureFault e) { throw new McpFault(e.Code); }
-            }, foreground: false);
+            }, foreground: false) { RequiresDocument = false };
         yield return new HostImageTool<FrameRequest>("capture.frame.get", "Read one recorded frame by zero-based frameIndex OR recording-relative timeMs. Omit both for latest. Returns one bounded image; never uploads video.",
             ExtraSchema(new { frameIndex = new { type = "integer", minimum = 0 }, timeMs = new { type = "number", minimum = 0 } }), Decode<FrameRequest>, async (ctx, request, token) =>
             {
                 try
                 {
+                    await BindContent(ctx, request.SessionId, true);
                     McpResult? result = null;
                     await ctx.ReadAsync(() =>
                     {
@@ -102,12 +105,13 @@ public sealed class CaptureMcpHost(CaptureSession session, IContactSheetRenderer
                     return result!;
                 }
                 catch (CaptureFault e) { throw new McpFault(e.Code); }
-            });
+            }) { RequiresDocument = false };
         yield return new HostImageTool<SheetRequest>("capture.contactSheet.get", "Read 1-9 evenly spaced recorded frames as ONE image with cell bounds and exact frame indices/timestamps. No video transfer.",
             ExtraSchema(new { count = new { type = "integer", minimum = 1, maximum = 9, @default = 6 } }), Decode<SheetRequest>, async (ctx, request, token) =>
             {
                 try
                 {
+                    await BindContent(ctx, request.SessionId, true);
                     string expected = ""; string? recordingId = null; SheetInput[] selected = [];
                     await ctx.ReadAsync(() =>
                     {
@@ -135,7 +139,23 @@ public sealed class CaptureMcpHost(CaptureSession session, IContactSheetRenderer
                     }, token);
                 }
                 catch (CaptureFault e) { throw new McpFault(e.Code); }
-            });
+            }) { RequiresDocument = false };
+    }
+    private async Task BindContent(RequestContext context, string? expected, bool screen, bool operations = false)
+    {
+        string identity = ""; long operationEpoch = 0;
+        await context.ReadAsync(() => {
+            identity = session.ResolveSession(expected, screen);
+            operationEpoch = session.Observation.OperationEpoch;
+            return JsonSerializer.SerializeToElement(true);
+        });
+        await context.BindDisclosureAsync(() => {
+            try {
+                session.ResolveSession(identity, screen);
+                if (operations && (!session.Observation.IsRecordingOperations || operationEpoch != session.Observation.OperationEpoch))
+                    throw new CaptureFault("forbidden");
+            } catch (CaptureFault e) { throw new McpFault(e.Code); }
+        });
     }
     private static JsonElement ExtraSchema(object extra)
     {

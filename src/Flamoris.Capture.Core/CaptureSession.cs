@@ -14,6 +14,13 @@ public sealed class CaptureSession : IDisposable
     private string sessionId = NewId(), targetId = NewId();
     private long epoch;
     private bool sharing, busy, disposed;
+    public bool IsDisposed => Invoke(() => disposed);
+    public SessionInfo Status(string? expected = null) => Invoke(() =>
+    {
+        if (disposed) throw new CaptureFault("stale_session");
+        if (expected is not null && expected != sessionId) throw new CaptureFault("stale_session");
+        return Info;
+    });
     public event Action? Invalidating;
     internal event Action? TargetResetting;
     private static string NewId() => Guid.NewGuid().ToString("N");
