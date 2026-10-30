@@ -16,7 +16,7 @@ The current one-window scope is being reviewed for a stable milestone in [#6](ht
 - AI obtains a summary, a selected frame by index/time, a single contact sheet of up to nine frames, or a page of operation events. The whole video is never sent through MCP.
 - **操作記録** independently records physical keys (including Blender single-letter/numpad keys), target-local mouse buttons/movement/wheel. Only the selected foreground root window qualifies. Yellow **操作記録中** and red **録画中** badges reflect actual acquisition state.
 - A shared first-use notice has only OK and an initially unchecked **次回からこのメッセージを表示しない**. **設定 → 安全確認メッセージを表示する** restores it. No acquisition begins before OK.
-- Core/Wpf 1.3.1 still own MCP transport, authorization, providers, connection UI and single-image results. No second session/target authority is introduced.
+- Core/Wpf 1.4.0 still own MCP transport, authorization, providers, connection UI and single-image results. No second session/target authority is introduced.
 
 **Limitations:** one window only; no monitor/rectangle capture, audio, cursor overlay, imported-video player, input replay, comparison, installer or signing. Input recording suppresses keys in UI Automation-recognized password/editable/text controls; custom controls may not report their nature, and physical key sequences can reveal typed information. The notice and explicit stop remain essential. The tested workflow and remaining OS/GPU/Blender cases are recorded in [Windows acceptance](docs/WINDOWS-ACCEPTANCE.md).
 
@@ -42,9 +42,9 @@ See [Setup](docs/SETUP.md) for the DLL contract and request examples, [Hub conne
 
 1. Choose a window and click **対象にする**. This binds a target without acquiring pixels.
 2. Connect **MCP / AI → 接続 → 読み取り専用** independently of a target, then select a window and enable **画面共有**, acknowledging the notice. The preview updates only while enabled. AI can now request the currently shared window without knowing an internal ID.
-3. Optionally enable **操作記録**. It works with screen sharing OFF too; connect MCP after enabling the desired capabilities. Recognized text-entry controls are excluded. Other foreground applications are excluded.
+3. Optionally enable **操作記録**. It works with screen sharing OFF too; the MCP connection is independent of either checkbox. Recognized text-entry controls are excluded. Other foreground applications are excluded.
 4. For video, enable screen sharing and click **録画開始**. **録画停止** finishes frame acquisition; **録画を見る**, the slider and **再生** inspect it. **MP4を保存** exports a silent video; **操作履歴を保存** exports synchronized JSON. A new recording replaces the previous temporary recording and starts a fresh frame/event timeline.
-5. Screen sharing OFF immediately cancels live pixel acquisition/recording, clears the live preview and revokes the old MCP grant. Operation recording has its own OFF switch. **すべて停止** also clears the target and stops both. Restart/target loss/OS lock never resumes acquisition automatically.
+5. Screen sharing OFF immediately cancels live pixel acquisition/recording, clears the live preview and invalidates old content authority while keeping MCP connected. Operation recording has its own OFF switch. **すべて停止** also clears the target and stops both. Restart/target loss/OS lock never resumes acquisition automatically.
 
 Stopped footage remains locally saveable until replaced or the app exits. Previously revoked footage cannot become MCP-readable merely by enabling sharing again. Temporary frame files are deleted on normal replacement/exit; a crash may leave files in the current user's temporary `FLAMORIS-Capture` directory. MP4/JSON files deliberately saved by the human remain under their control.
 

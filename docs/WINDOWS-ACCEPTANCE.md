@@ -43,7 +43,7 @@ Date, exact app commit, Windows build, SDK/runtime, GPU/driver, monitor resoluti
 
 | Check | Expected | Evidence |
 |---|---|---|
-| Cold start/restart | Target, capture, sharing OFF; no acquisition or endpoint | Pending |
+| Cold start/restart | Target, capture, sharing OFF; no acquisition. New settings enable a local read-only MCP endpoint; saved auto-connect OFF stays OFF | Pending |
 | Select/confirm one window | Current item name confirmed, no other-window pixels; local preview works without MCP | Pending |
 | Two windows with same title, close/recreate rapidly | Bound WGC item never changes; stale session/grant rejected | Pending |
 | Toggle screen sharing ON/OFF | OFF cancels live acquisition/recording, clears preview and revokes old image access; operation recording remains independent | Pending physical OFF/revoke case |
@@ -70,7 +70,7 @@ Keep **source complete**, **automated build/contracts/transport**, **physical di
 - MCP `input: {}` returns the selected window without ID discovery. Explicit old ID still fails. New Hub catalog has seven tools; old catalog is updated without replacing connector credentials.
 - Record moving synthetic window for 5 seconds; stop, scrub/play, save MP4/JSON and decode MP4. Compare actual acquired timestamps/counts and event timeline. Verify silent output, cursor exclusion, odd dimensions, cancellation/failure preserving existing destination.
 - Screen OFF during native acquisition/recording: no later image disclosure, no new frame files, live preview clears. Operation checkbox may remain ON independently. Operations OFF: no new events. All-target Stop/target loss/OS lock stops both and never resumes on unlock.
-- Enable operations only, connect Read only: session/events work; screenshot/frame/contact sheet fail. Disable both: no observation available.
+- Enable operations only, connect Read only: session/events work; screenshot/frame/contact sheet fail. Disable both: content queries are denied, safe context/session status and the connection remain available.
 - In Blender: numpad with NumLock ON/OFF; G, X, numeric command, Enter; key up/down, left/right modifiers, mouse drag, wheel. Verify appropriate target-relative coordinates and event/frame timing; do not enter private text.
 - Focus another app: no keyboard/mouse packets retained. Pointer over another/overlapping window: no mouse event. Test separate target dialogs/popups and document exclusion. Test known password/editable controls and a custom canvas; UI Automation exclusion is best effort, not universal protection.
 - Source-size change, minimized target, capture busy/timeout and disk/resource limits: bounded behavior and explicit stop reason; no desktop fallback. Measure actual FPS/CPU/GPU/disk before promising realtime performance.

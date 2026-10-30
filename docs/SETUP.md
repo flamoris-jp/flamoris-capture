@@ -1,13 +1,13 @@
 # Setup & development
 
-**Current slice:** 0.2.0 — one selected window, screenshots, recording/MP4, frame/contact-sheet queries and opt-in key/mouse events. Current contract: [ADR 0002](decisions/0002-simple-observation-recording.md).
+**Current slice:** 0.2.0 — one selected window, screenshots, recording/MP4, frame/contact-sheet queries and opt-in key/mouse events. Current recording contract: [ADR 0002](decisions/0002-simple-observation-recording.md); current connection/consent contract: [ADR 0004](decisions/0004-application-mcp-lifetime.md).
 
 ## Prerequisites
 
 - .NET 10 SDK; `global.json` accepts the latest installed 10.0 feature band.
 - An interactive Windows desktop with WGC and a D3D11 hardware device for real capture. API floor is Windows build 19041; win-x64 is the preview distribution target. Real OS/GPU support remains subject to acceptance.
 - Ordinary current-user execution; no administrator permission, service, GPU daemon, secret environment setup or private package feed is required.
-- Public NuGet restore: Flamoris.Mcp.Core and Flamoris.Mcp.Wpf **1.3.1**, plus their transitive logging/official MCP SDK dependencies. No DLL vendoring.
+- Public NuGet restore: Flamoris.Mcp.Core and Flamoris.Mcp.Wpf **1.4.0**, plus their transitive logging/official MCP SDK dependencies. No DLL vendoring.
 
 For an authenticated checkout:
 
@@ -55,7 +55,7 @@ dotnet test tests/Flamoris.Capture.Tests -c Release --no-build
 
 Follow the [README usage](../README.md#usage). Target selection is local; **画面共有** is the sole screen-acquisition checkbox and **操作記録** is independent. The first enabled capability presents the common safety notice. If suppression is not selected, the notice appears on the first enable in each new app run. Settings can restore the notice even during that run.
 
-All acquisition starts OFF, including when provider preferences remain saved. MCP only accepts Read only. Connect after enabling the intended capabilities; capability/target changes can revoke an old connection and require reconnection. Operation-only mode allows session/summary/event queries, while image tools reject access without screen sharing.
+All acquisition starts OFF, including when provider preferences remain saved. MCP only accepts Read only. Connect before selecting a target or enabling a capability. New preferences auto-connect locally read-only; saved OFF remains OFF. Capability/target changes invalidate stale content/session IDs while preserving the application connection. Safe context/session status remains available with both capabilities OFF. Operation-only mode allows session/summary/event queries, while image tools reject access without screen sharing.
 
 | Local tool | Input inside `input` | Result |
 |---|---|---|
@@ -120,7 +120,7 @@ Read all event pages: pass the returned `nextSequence` as `afterSequence` until 
 
 ## Troubleshooting
 
-- Hub reports the Capture upstream offline: connect Capture through its MCP menu after enabling the intended capabilities; catalog registration alone does not connect the desktop app.
+- Hub reports the Capture upstream offline: check startup auto-connect or connect Capture through its MCP menu, even with both capabilities OFF; catalog registration alone does not connect the desktop app.
 - Updated source but old UI: close Capture, switch to `main`, pull, republish, and launch the EXE in the new output folder. `git pull` alone does not update an existing EXE.
 - Mouse events but no keys: confirm the selected target is foreground and focus its timeline/canvas rather than a recognized text-entry control; then inspect all event pages. Separate dialogs/popups with a different root are outside the selected-window trace.
 - `target_lost`: reselect and authorize a live window; the app never follows a replacement window.
@@ -136,18 +136,19 @@ See [Windows acceptance](WINDOWS-ACCEPTANCE.md) for the basic real-Windows workf
 ### Embedded WPF editor host
 
 Reference `src/Flamoris.Capture.Wpf/Flamoris.Capture.Wpf.csproj` from a
-`net10.0-windows10.0.19041.0` WPF app. Construct `EmbeddedWindowCapture(owner,
-revokeMcp)`, put its `Control` in the host's visible status bar, and append
+`net10.0-windows10.0.19041.0` WPF app. Construct `EmbeddedWindowCapture(owner)`, put its `Control` in the host's visible
+status bar, and append
 `Tools()` to the host's existing MCP boundary.
 
 Acquire `var captureLease = capture.BeginConnection()` while attaching the MCP
 connection. Dispose the lease in the attachment's `StopHost` callback and on
-any attach failure. The MCP connection itself includes observation of the host
-window, in both read-only and edit modes. There is no additional checkbox,
-notice or independent sharing preference for this embedded workflow.
-`revokeMcp` invalidates the current editor grant on OS/window lifecycle loss.
-Dispose the component with the host and call `Stop()` on loss/replacement of
-editing authority as appropriate. Core/Wpf/bridge must be 1.3.1.
+any attach failure. `BeginConnection()` only enables the independent visible
+sharing checkbox; it neither selects the owner window nor grants content consent.
+The human must enable sharing and confirm the notice. Sharing OFF, OS/window loss
+and `Stop()` invalidate content without revoking the editor's application grant.
+Call `Stop()` on document replacement so the next target requires fresh consent.
+The host owns connection revocation on explicit MCP Stop/runtime loss/shutdown.
+Dispose the component with its owner. Core/Wpf/bridge must be 1.4.0.
 
 For an existing Hub editor catalog, append the two entries in
 `config/hub-embedded-capture.tools.json`; preserve the rest of the catalog and
