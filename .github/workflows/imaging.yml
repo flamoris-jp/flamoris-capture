@@ -1,0 +1,29 @@
+name: portable-imaging
+on:
+  pull_request:
+  push:
+    branches: [main, 'feature/**']
+permissions:
+  contents: read
+jobs:
+  imaging:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet test tests/Flamoris.Capture.Imaging.Tests -c Release
+      - run: dotnet build src/Flamoris.Capture.Imaging.Cli -c Release
+      - name: Publish self-contained image adapter
+        if: runner.os == 'Linux'
+        run: dotnet publish src/Flamoris.Capture.Imaging.Cli -c Release -r linux-x64 --self-contained true -o artifacts/imaging-linux-x64
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: imaging-linux-x64
+          path: artifacts/imaging-linux-x64/

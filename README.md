@@ -88,3 +88,8 @@ reference it without launching the standalone EXE. See
 ## MCP startup and sharing
 
 See [startup/consent behavior and Windows acceptance](docs/mcp-startup.md). MCP can connect at application startup before opening a file; connection alone never enables screen sharing. Document changes preserve the connection and invalidate old target guards.
+
+
+## Portable image library
+
+[Windows/Linux still-image processing](docs/PORTABLE-IMAGING.md) and a bounded local CLI are available in `Flamoris.Capture.Imaging`. CG reuses this library for saved previews. Existing Windows screen acquisition and encoding remain on their accepted backend; switching them is a later comparison/acceptance step.
