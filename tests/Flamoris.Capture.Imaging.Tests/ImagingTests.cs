@@ -42,6 +42,7 @@ public class ImagingTests
         Assert.Throws<CaptureFault>(() => ImageProcessor.Process(Fixture(), new() { Roi = new(int.MaxValue, 0, 2, 2) }));
         Assert.Throws<CaptureFault>(() => ImageProcessor.Process(Fixture(), new() { MaxEdge = 1921 }));
         Assert.Throws<CaptureFault>(() => ImagePolicy.Region(8192, 8192, null));
+        Assert.Equal("resource_limit", Assert.Throws<CaptureFault>(() => ImageProcessor.Process(Fixture(8193, 1), new())).Code);
         using var stop = new CancellationTokenSource(); stop.Cancel();
         Assert.Throws<OperationCanceledException>(() => ImageProcessor.Process(Fixture(), new(), stop.Token));
     }
@@ -53,7 +54,8 @@ public class ImagingTests
         System.Runtime.InteropServices.Marshal.Copy(pixels, 0, b.GetPixels(), pixels.Length);
         using var d = b.Encode(SKEncodedImageFormat.Png, 100);
         Assert.Equal("response_too_large", Assert.Throws<CaptureFault>(() => ImageProcessor.Process(d.ToArray(), new() { Format = "png", MaxEdge = 1920, RequireExactSize = true })).Code);
-        var r = ImageProcessor.Process(d.ToArray(), new() { Format = "png", MaxEdge = 1920 });
+        Assert.Equal("response_too_large", Assert.Throws<CaptureFault>(() => ImageProcessor.Process(d.ToArray(), new() { Format = "png", MaxEdge = 1920 })).Code);
+        var r = ImageProcessor.Process(d.ToArray(), new() { Format = "png", MaxEdge = 1280 });
         Assert.InRange(r.Bytes.Length, 1, ImagePolicy.MaximumBytes); Assert.True(r.Metadata.OutputWidth < 1920);
     }
     [Fact] public async Task StreamIsBounded()
