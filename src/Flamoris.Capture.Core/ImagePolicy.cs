@@ -26,7 +26,7 @@ public static class ImagePolicy
     }
     // Explicit bounded nearest-neighbour resampling; no interpolation across the ROI boundary.
     public static byte[] CropScale(byte[] bgra, int sourceWidth, int sourceHeight, PixelRect roi,
-        int width, int height, CancellationToken token)
+        int width, int height, CancellationToken token, bool preserveAlpha = false)
     {
         Region(sourceWidth, sourceHeight, roi);
         if (bgra.Length != checked(sourceWidth * sourceHeight * 4) || width < 1 || height < 1 || width > 1920 || height > 1920)
@@ -41,7 +41,7 @@ public static class ImagePolicy
                 int sx = roi.X + (int)((long)x * roi.Width / width);
                 int src = (sy * sourceWidth + sx) * 4, dst = (y * width + x) * 4;
                 output[dst] = bgra[src]; output[dst + 1] = bgra[src + 1]; output[dst + 2] = bgra[src + 2];
-                output[dst + 3] = 255;
+                output[dst + 3] = preserveAlpha ? bgra[src + 3] : (byte)255;
             }
         }
         return output;
@@ -58,3 +58,4 @@ public static class ImagePolicy
         }
     }
 }
+
